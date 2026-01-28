@@ -20,7 +20,7 @@ See [docs/ARCHITECTURE-PLAN.md](docs/ARCHITECTURE-PLAN.md) for the complete arch
 │                                                     ▼                        │
 │                                    ┌────────────────────────────┐            │
 │                                    │   Recording Service (Go)   │            │
-│                                    │   Port: 50054              │            │
+│                                    │   Port: 50075              │            │
 │                                    │                            │            │
 │                                    │   • Policy enforcement     │            │
 │                                    │   • RTP packet capture     │            │
@@ -61,7 +61,7 @@ See [docs/ARCHITECTURE-PLAN.md](docs/ARCHITECTURE-PLAN.md) for the complete arch
 
 | Component | Port | Description |
 |-----------|------|-------------|
-| Recording Service | 50054 | gRPC server for SFU communication |
+| Recording Service | 50075 | gRPC server for SFU communication |
 | Recording Redis | 6380 | Job queue (separate from brollyhub redis) |
 | MinIO | 9100 | Storage (existing, new bucket: recordings-private) |
 
@@ -78,7 +78,7 @@ docker-compose ps
 docker logs recording-service
 
 # Health check
-curl http://localhost:50055/health
+curl http://localhost:50076/health
 ```
 
 ### Local Development

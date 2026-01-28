@@ -9,16 +9,18 @@ RUN apk add --no-cache git protobuf protobuf-dev
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
-# Copy go mod files first for caching
+# Copy go mod files first
 COPY go.mod go.sum ./
-RUN go mod download
 
 # Copy proto files and generate
-COPY proto/ ./proto/
+COPY proto/recording_sfu.proto ./proto/
 RUN protoc --proto_path=proto \
     --go_out=proto --go_opt=paths=source_relative \
     --go-grpc_out=proto --go-grpc_opt=paths=source_relative \
     proto/recording_sfu.proto
+
+# Download dependencies after proto generation
+RUN go mod download
 
 # Copy rest of source code
 COPY . .
@@ -39,14 +41,14 @@ COPY --from=builder /app/recording-service .
 COPY --from=builder /app/config.yaml .
 
 # Expose gRPC port
-EXPOSE 50054
+EXPOSE 50075
 
 # Expose health check port
-EXPOSE 50055
+EXPOSE 50076
 
 # Health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -q -O- http://localhost:50055/health || exit 1
+    CMD wget -q -O- http://localhost:50076/health || exit 1
 
 # Run the service
 ENTRYPOINT ["./recording-service"]

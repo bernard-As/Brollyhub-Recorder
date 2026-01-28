@@ -139,7 +139,7 @@ The recording service integrates with existing services from `brollyhub-central`
 │  │  ┌─────────────────┐  ┌─────────────────┐                       │    │
 │  │  │ Recording       │  │ Post-Processor  │                       │    │
 │  │  │ Service         │  │ Workers         │                       │    │
-│  │  │ gRPC: 50054     │  │                 │                       │    │
+│  │  │ gRPC: 50075     │  │                 │                       │    │
 │  │  └─────────────────┘  └─────────────────┘                       │    │
 │  │         │                     │                                  │    │
 │  │         │   Uses existing:    │                                  │    │
@@ -162,7 +162,7 @@ The recording service integrates with existing services from `brollyhub-central`
 | MinIO Console | 9101 | Existing - for admin |
 | Redis (brollyhub) | 6378 (→6379) | Existing - DO NOT USE |
 | Redis (recording) | **6380** (→6379) | NEW - recording job queue |
-| Recording gRPC | **50054** | NEW - SFU ↔ Recording |
+| Recording gRPC | **50075** | NEW - SFU ↔ Recording |
 | Huddle gRPC | 50052 | Existing - policy validation |
 
 ### 2.3 MinIO Bucket Strategy
@@ -212,7 +212,7 @@ MinIO (minio:9100)
 │                        ▼  gRPC Stream (binary RTP)                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │                    RECORDING SERVICE (Go)                            │    │
-│  │                    Port: 50054                                       │    │
+│  │                    Port: 50075                                       │    │
 │  │                                                                      │    │
 │  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐      │    │
 │  │  │ gRPC Server     │  │ Track Manager   │  │ Storage Manager │      │    │
@@ -1064,12 +1064,12 @@ services:
       dockerfile: Dockerfile
     container_name: recording-service
     ports:
-      - "50054:50054"
+      - "50075:50075"
     environment:
       # gRPC
-      RECORDING_GRPC_PORT: "50054"
+      RECORDING_GRPC_PORT: "50075"
       RECORDING_SFU_HOST: "sfu"
-      RECORDING_SFU_PORT: "50055"
+      RECORDING_SFU_PORT: "50076"
 
       # MinIO (reuse existing)
       RECORDING_S3_ENDPOINT: "minio:9100"
@@ -1094,7 +1094,7 @@ services:
       - brollyhub-central_brollyhub_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:50054/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:50075/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -1196,9 +1196,9 @@ WORKDIR /app
 
 COPY --from=builder /recording-service .
 
-ENV RECORDING_GRPC_PORT=50054
+ENV RECORDING_GRPC_PORT=50075
 
-EXPOSE 50054
+EXPOSE 50075
 
 ENTRYPOINT ["/app/recording-service"]
 ```
@@ -1209,9 +1209,9 @@ ENTRYPOINT ["/app/recording-service"]
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RECORDING_GRPC_PORT` | 50054 | Recording service gRPC port |
+| `RECORDING_GRPC_PORT` | 50075 | Recording service gRPC port |
 | `RECORDING_SFU_HOST` | sfu | SFU hostname |
-| `RECORDING_SFU_PORT` | 50055 | SFU recording gRPC port |
+| `RECORDING_SFU_PORT` | 50076 | SFU recording gRPC port |
 | `RECORDING_S3_ENDPOINT` | minio:9100 | MinIO endpoint |
 | `RECORDING_S3_BUCKET` | recordings-private | Storage bucket |
 | `RECORDING_S3_ACCESS_KEY` | minioadmin | MinIO access key |

@@ -10,7 +10,7 @@ The Recording Service captures individual media tracks from SFU rooms for post-p
 SFU (MediaSoup)                          Recording Service (Go)
 ┌──────────────────┐                     ┌─────────────────────┐
 │ Room.js          │   gRPC Stream       │ gRPC Server         │
-│ DirectTransport  │ ─────────────────►  │ (:50054)            │
+│ DirectTransport  │ ─────────────────►  │ (:50075)            │
 │ consumer.on(rtp) │   RTP + Events      │                     │
 └──────────────────┘                     │ ┌─────────────────┐ │
                                          │ │ Recording Mgr   │ │
@@ -60,7 +60,7 @@ SFU (MediaSoup)                          Recording Service (Go)
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RECORDING_GRPC_HOST` | 0.0.0.0 | gRPC server host |
-| `RECORDING_GRPC_PORT` | 50054 | gRPC server port |
+| `RECORDING_GRPC_PORT` | 50075 | gRPC server port |
 | `RECORDING_S3_ENDPOINT` | minio:9100 | MinIO endpoint |
 | `RECORDING_S3_BUCKET` | recordings-private | Storage bucket |
 | `RECORDING_S3_ACCESS_KEY` | minioadmin | MinIO access key |
@@ -73,7 +73,7 @@ SFU (MediaSoup)                          Recording Service (Go)
 ```yaml
 grpc:
   host: "0.0.0.0"
-  port: 50054
+  port: 50075
   max_message_size: 10485760
   keepalive_time: 30s
   keepalive_timeout: 10s
@@ -170,7 +170,7 @@ message RecordingPolicy {
 ### Health Check
 
 ```
-GET http://localhost:50055/health
+GET http://localhost:50076/health
 ```
 
 Response:
@@ -186,7 +186,7 @@ Response:
 ### Stats
 
 ```
-GET http://localhost:50055/stats
+GET http://localhost:50076/stats
 ```
 
 Response:
@@ -273,7 +273,7 @@ docker-compose up -d
 docker-compose logs -f recording-service
 
 # Health check
-curl http://localhost:50055/health
+curl http://localhost:50076/health
 ```
 
 ## Integration with SFU
@@ -287,7 +287,7 @@ const RecordingGrpcServer = require('./lib/grpc/recording-server');
 
 const recordingGrpcServer = new RecordingGrpcServer({
   host: process.env.RECORDING_GRPC_HOST || 'recording-service',
-  port: parseInt(process.env.RECORDING_GRPC_PORT || '50054'),
+  port: parseInt(process.env.RECORDING_GRPC_PORT || '50075'),
   sfuId: process.env.SFU_ID || 'sfu-1'
 }, rooms);
 
@@ -313,7 +313,7 @@ const response = await this.stopRecording(peerId);
 | Step | Command | Expected |
 |------|---------|----------|
 | 1 | `docker-compose up -d` | Services start |
-| 2 | `curl localhost:50055/health` | `{"healthy":true}` |
+| 2 | `curl localhost:50076/health` | `{"healthy":true}` |
 | 3 | Check SFU logs | "Recording service connected" |
 | 4 | Start meeting + recording | RTP packets in logs |
 | 5 | `mc ls myminio/recordings-private/rooms/` | Room directory |

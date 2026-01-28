@@ -161,14 +161,14 @@ Packet: ServerTS(8) + Length(2) + RTPData(N)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| RECORDING_GRPC_PORT | 50054 | gRPC port |
+| RECORDING_GRPC_PORT | 50075 | gRPC port |
 | RECORDING_S3_ENDPOINT | minio:9100 | MinIO endpoint |
 | RECORDING_S3_BUCKET | recordings-private | Storage bucket |
 | RECORDING_LOG_LEVEL | info | Log level |
 
 ## API Endpoints
 
-- `GET /health` - Health check (port 50055)
+- `GET /health` - Health check (port 50076)
 - `GET /stats` - Active recording stats
 
 ## Integration Points
