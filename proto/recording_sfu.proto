@@ -1,0 +1,253 @@
+// recording_sfu.proto
+// Protocol definitions for SFU ↔ Recording Service communication
+// This defines the bidirectional gRPC stream for recording RTP packets
+// and room events for server-side recording.
+
+syntax = "proto3";
+
+package recording;
+
+option go_package = "github.com/brollyhub/recording/proto";
+
+// =============================================================================
+// MAIN SERVICE - Bidirectional stream for recording operations
+// =============================================================================
+
+service RecordingSfuBridge {
+  // Connect establishes a bidirectional stream for recording operations
+  // SFU connects and sends RTP packets + events, Recording Service responds
+  rpc Connect(stream SfuToRecording) returns (stream RecordingToSfu);
+}
+
+// =============================================================================
+// RECORDING SERVICE → SFU MESSAGES
+// =============================================================================
+
+message RecordingToSfu {
+  oneof message {
+    RegisterResponse register_response = 1;
+    StartRecordingResponse start_recording_response = 2;
+    StopRecordingResponse stop_recording_response = 3;
+    ErrorMessage error = 4;
+    Heartbeat heartbeat = 5;
+  }
+}
+
+// =============================================================================
+// SFU → RECORDING SERVICE MESSAGES
+// =============================================================================
+
+message SfuToRecording {
+  oneof message {
+    // Registration
+    RegisterRequest register = 1;
+
+    // Recording control
+    StartRecordingRequest start_recording = 2;
+    StopRecordingRequest stop_recording = 3;
+
+    // Track management
+    SubscribeTrackRequest subscribe_track = 4;
+    UnsubscribeTrackRequest unsubscribe_track = 5;
+
+    // Media data
+    RtpPacket rtp_packet = 6;
+
+    // Room events for timeline
+    RoomEvent room_event = 7;
+
+    // Keep-alive
+    Heartbeat heartbeat = 8;
+  }
+}
+
+// =============================================================================
+// REGISTRATION MESSAGES
+// =============================================================================
+
+message RegisterRequest {
+  string sfu_id = 1;
+  string sfu_host = 2;
+  int32 sfu_port = 3;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string recording_service_id = 2;
+  string message = 3;
+}
+
+// =============================================================================
+// RECORDING CONTROL MESSAGES
+// =============================================================================
+
+message StartRecordingRequest {
+  string room_id = 1;
+  string requested_by = 2;  // peer_id of who requested recording
+  RecordingPolicy policy = 3;
+}
+
+message StartRecordingResponse {
+  bool success = 1;
+  string recording_id = 2;
+  string room_id = 3;
+  string message = 4;
+  int64 started_at = 5;  // Unix timestamp ms
+}
+
+message StopRecordingRequest {
+  string room_id = 1;
+  string recording_id = 2;
+  string stopped_by = 3;  // peer_id of who stopped recording
+}
+
+message StopRecordingResponse {
+  bool success = 1;
+  string recording_id = 2;
+  string room_id = 3;
+  string message = 4;
+  int64 stopped_at = 5;  // Unix timestamp ms
+  RecordingStats stats = 6;
+}
+
+// =============================================================================
+// TRACK SUBSCRIPTION MESSAGES
+// =============================================================================
+
+message SubscribeTrackRequest {
+  string room_id = 1;
+  string recording_id = 2;
+  string producer_id = 3;
+  string peer_id = 4;
+  TrackType track_type = 5;
+  string codec = 6;
+  uint32 payload_type = 7;
+  uint32 ssrc = 8;
+}
+
+message UnsubscribeTrackRequest {
+  string room_id = 1;
+  string recording_id = 2;
+  string producer_id = 3;
+}
+
+// =============================================================================
+// RTP PACKET MESSAGE
+// =============================================================================
+
+message RtpPacket {
+  string room_id = 1;
+  string producer_id = 2;
+  string peer_id = 3;
+  bytes rtp_data = 4;         // Raw RTP packet bytes
+  uint32 ssrc = 5;
+  uint32 payload_type = 6;
+  int64 timestamp = 7;        // Server-side capture timestamp (Unix ms)
+}
+
+// =============================================================================
+// ROOM EVENTS FOR TIMELINE
+// =============================================================================
+
+message RoomEvent {
+  string room_id = 1;
+  string recording_id = 2;
+  int64 timestamp = 3;  // Unix timestamp ms
+
+  oneof event {
+    ProducerCreatedEvent producer_created = 4;
+    ProducerClosedEvent producer_closed = 5;
+    ProducerPausedEvent producer_paused = 6;
+    ProducerResumedEvent producer_resumed = 7;
+    PeerJoinedEvent peer_joined = 8;
+    PeerLeftEvent peer_left = 9;
+    ActiveSpeakerEvent active_speaker = 10;
+  }
+}
+
+message ProducerCreatedEvent {
+  string producer_id = 1;
+  string peer_id = 2;
+  TrackType track_type = 3;
+  string codec = 4;
+  uint32 payload_type = 5;
+  uint32 ssrc = 6;
+}
+
+message ProducerClosedEvent {
+  string producer_id = 1;
+  string peer_id = 2;
+  TrackType track_type = 3;
+}
+
+message ProducerPausedEvent {
+  string producer_id = 1;
+  string peer_id = 2;
+}
+
+message ProducerResumedEvent {
+  string producer_id = 1;
+  string peer_id = 2;
+}
+
+message PeerJoinedEvent {
+  string peer_id = 1;
+  string display_name = 2;
+}
+
+message PeerLeftEvent {
+  string peer_id = 1;
+}
+
+message ActiveSpeakerEvent {
+  string peer_id = 1;
+}
+
+// =============================================================================
+// RECORDING POLICY
+// =============================================================================
+
+message RecordingPolicy {
+  bool enabled = 1;
+  WhoCanRecord who_can_record = 2;
+  bool auto_record = 3;
+  bool record_audio = 4;
+  bool record_video = 5;
+  bool record_screenshare = 6;
+}
+
+enum WhoCanRecord {
+  WHO_CAN_RECORD_UNSPECIFIED = 0;
+  HOST_ONLY = 1;
+  CO_HOST_AND_HOST = 2;
+  ANYONE = 3;
+}
+
+enum TrackType {
+  TRACK_TYPE_UNSPECIFIED = 0;
+  AUDIO = 1;
+  VIDEO = 2;
+  SCREENSHARE = 3;
+}
+
+// =============================================================================
+// UTILITY MESSAGES
+// =============================================================================
+
+message Heartbeat {
+  int64 timestamp = 1;
+}
+
+message ErrorMessage {
+  string code = 1;
+  string message = 2;
+  string room_id = 3;
+  string recording_id = 4;
+}
+
+message RecordingStats {
+  int64 duration_ms = 1;
+  int64 total_bytes = 2;
+  int32 track_count = 3;
+  int32 peer_count = 4;
+}
