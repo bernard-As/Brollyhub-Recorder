@@ -99,11 +99,29 @@ recordings-private/
     ├── .completed          # Finalized marker
     ├── metadata.json       # Room info, participants, tracks
     ├── timeline.json       # Events for sync
-    ├── policy.json         # Policy snapshot
+    ├── policy.json         # Policy snapshot (see below)
     └── tracks/
         ├── {peer_id}-audio.rtp
         ├── {peer_id}-video.rtp
         └── {peer_id}-screenshare.rtp
+```
+
+### policy.json Structure
+
+```json
+{
+  "recording_id": "uuid",
+  "room_id": "room-id",
+  "enabled": true,
+  "who_can_record": "host_only",
+  "auto_record": true,
+  "record_audio": true,
+  "record_video": true,
+  "record_screenshare": true,
+  "who_can_access_recordings": "host",
+  "allowed_accessor_ids": [],
+  "snapshot_time": "2026-01-28T12:00:00Z"
+}
 ```
 
 ## RTP File Format
@@ -157,13 +175,38 @@ Custom format with 32-byte header followed by packet records:
 ```protobuf
 message RecordingPolicy {
   bool enabled = 1;
-  WhoCanRecord who_can_record = 2;  // HOST_ONLY, CO_HOST_AND_HOST, ANYONE
-  bool auto_record = 3;
-  bool record_audio = 4;
-  bool record_video = 5;
-  bool record_screenshare = 6;
+  WhoCanRecord who_can_record = 2;           // HOST_ONLY, CO_HOST_AND_HOST, ANYONE (placeholder for future)
+  bool auto_record = 3;                      // Auto-start recording on first producer
+  bool record_audio = 4;                     // Record audio tracks
+  bool record_video = 5;                     // Record video tracks
+  bool record_screenshare = 6;               // Record screenshare tracks
+  AccessLevel who_can_access_recordings = 7; // Post-meeting access control
+  repeated string allowed_accessor_ids = 8;  // User IDs when ACCESS_SELECTED
+}
+
+enum AccessLevel {
+  ACCESS_LEVEL_UNSPECIFIED = 0;
+  ACCESS_ALL = 1;        // All participants can access
+  ACCESS_HOST = 2;       // Host only (default)
+  ACCESS_LOGGED_IN = 3;  // Logged in users only
+  ACCESS_SELECTED = 4;   // Selected participants (use allowed_accessor_ids)
 }
 ```
+
+### Policy Flow
+
+```
+Huddle Backend          SFU (Room.js)           Recording Service (Go)
+┌─────────────┐        ┌─────────────┐          ┌─────────────────┐
+│ room_policy │───────▶│ Auto-trigger│─────────▶│ Policy Storage  │
+│   Schema    │ gRPC   │ on producer │  gRPC    │ Track Filtering │
+│ Validation  │        │ Policy check│          │ MinIO snapshot  │
+└─────────────┘        └─────────────┘          └─────────────────┘
+```
+
+### Auto-Recording
+
+When `auto_record` is enabled, the SFU will automatically start recording when the first participant creates a producer (audio/video) that matches the track type filters (`record_audio`, `record_video`, `record_screenshare`).
 
 ## API Endpoints
 
