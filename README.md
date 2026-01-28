@@ -108,7 +108,7 @@ go build -o recording-service ./cmd/recording-service
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Language | Go | 1.22+ |
+| Language | Go | 1.23+ |
 | gRPC | google.golang.org/grpc | v1.68.0 |
 | Protobuf | google.golang.org/protobuf | v1.36.0 |
 | RTP Parsing | pion/rtp | v1.8.3 |

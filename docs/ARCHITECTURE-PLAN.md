@@ -804,7 +804,7 @@ message RecordingError {
 
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
-| Language | Go 1.22 | gRPC native, Pion RTP, efficient concurrency |
+| Language | Go 1.23 | gRPC native, Pion RTP, efficient concurrency |
 | RTP Parsing | pion/rtp | Production-grade, used by Discord/Twitch |
 | gRPC | google.golang.org/grpc | First-class support |
 | S3 Client | aws-sdk-go-v2 | MinIO compatible |
@@ -837,7 +837,7 @@ message RecordingError {
 │  └── Metadata: Stored in MinIO as JSON                           │
 │                                                                  │
 │  Container                                                       │
-│  ├── Base: golang:1.22-alpine                                    │
+│  ├── Base: golang:1.23-alpine                                    │
 │  ├── FFmpeg: static build (~50MB)                                │
 │  └── Total Image: ~100MB                                         │
 │                                                                  │
@@ -1170,7 +1170,7 @@ networks:
 
 ```dockerfile
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 

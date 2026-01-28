@@ -41,7 +41,7 @@ docker-compose logs -f recording-service
 ### Tech Stack
 | Category | Technology | Version |
 |----------|------------|---------|
-| Language | Go | 1.22+ |
+| Language | Go | 1.23+ |
 | gRPC | google.golang.org/grpc | v1.68.0 |
 | Protobuf | google.golang.org/protobuf | v1.36.0 |
 | Storage | MinIO (S3-compatible) | - |

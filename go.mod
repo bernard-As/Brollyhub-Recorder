@@ -1,6 +1,6 @@
 module github.com/brollyhub/recording
 
-go 1.22.7
+go 1.23
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.24.0
