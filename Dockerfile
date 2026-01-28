@@ -5,8 +5,9 @@ WORKDIR /app
 
 # Install protoc and required tools
 RUN apk add --no-cache git protobuf protobuf-dev
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+# Pin versions compatible with Go 1.23
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
 # Copy go mod files first for caching
 COPY go.mod go.sum ./

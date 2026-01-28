@@ -86,8 +86,8 @@ curl http://localhost:50055/health
 ```powershell
 # Install proto tools (Windows)
 winget install Google.Protobuf
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
 # Generate proto files
 powershell -ExecutionPolicy Bypass -File "D:/recording/scripts/generate-proto.ps1"
@@ -108,9 +108,9 @@ go build -o recording-service ./cmd/recording-service
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Language | Go | 1.23+ |
-| gRPC | google.golang.org/grpc | v1.68.0 |
-| Protobuf | google.golang.org/protobuf | v1.36.0 |
+| Language | Go | 1.23 |
+| gRPC | google.golang.org/grpc | v1.67.0 |
+| Protobuf | google.golang.org/protobuf | v1.35.2 |
 | RTP Parsing | pion/rtp | v1.8.3 |
 | Storage | MinIO (S3-compatible) | - |
 | Post-Processing | FFmpeg | - |
@@ -121,5 +121,5 @@ go build -o recording-service ./cmd/recording-service
 | Tool | Version | Install |
 |------|---------|---------|
 | protoc | v6.33+ | `winget install Google.Protobuf` |
-| protoc-gen-go | v1.36+ | `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` |
-| protoc-gen-go-grpc | v1.6+ | `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest` |
+| protoc-gen-go | v1.35.2 | `go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2` |
+| protoc-gen-go-grpc | v1.5.1 | `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1` |

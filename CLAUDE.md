@@ -41,9 +41,9 @@ docker-compose logs -f recording-service
 ### Tech Stack
 | Category | Technology | Version |
 |----------|------------|---------|
-| Language | Go | 1.23+ |
-| gRPC | google.golang.org/grpc | v1.68.0 |
-| Protobuf | google.golang.org/protobuf | v1.36.0 |
+| Language | Go | 1.23 |
+| gRPC | google.golang.org/grpc | v1.67.0 |
+| Protobuf | google.golang.org/protobuf | v1.35.2 |
 | Storage | MinIO (S3-compatible) | - |
 | RTP Parsing | pion/rtp | v1.8.3 |
 | Logging | zap | v1.26.0 |
@@ -52,8 +52,8 @@ docker-compose logs -f recording-service
 | Tool | Version | Install Command |
 |------|---------|-----------------|
 | protoc | v6.33+ | `winget install Google.Protobuf` |
-| protoc-gen-go | v1.36+ | `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` |
-| protoc-gen-go-grpc | v1.6+ | `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest` |
+| protoc-gen-go | v1.35.2 | `go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2` |
+| protoc-gen-go-grpc | v1.5.1 | `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1` |
 
 ### Directory Structure
 ```

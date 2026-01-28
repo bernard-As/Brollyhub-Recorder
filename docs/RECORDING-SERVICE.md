@@ -214,16 +214,16 @@ Response:
 # Install protoc
 winget install Google.Protobuf
 
-# Install Go plugins
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+# Install Go plugins (pinned versions for Go 1.23 compatibility)
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 ```
 
 | Tool | Version | Purpose |
 |------|---------|---------|
 | protoc | v6.33+ | Protocol buffer compiler |
-| protoc-gen-go | v1.36+ | Go protobuf code generator |
-| protoc-gen-go-grpc | v1.6+ | Go gRPC code generator |
+| protoc-gen-go | v1.35.2 | Go protobuf code generator |
+| protoc-gen-go-grpc | v1.5.1 | Go gRPC code generator |
 
 ### Building
 
