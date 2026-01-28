@@ -445,15 +445,17 @@ func (r *RoomRecording) addTimelineEvent(eventType string, data map[string]inter
 
 func (r *RoomRecording) writePolicySnapshot() error {
 	snapshot := &storage.PolicySnapshot{
-		RecordingID:       r.recordingID,
-		RoomID:            r.roomID,
-		Enabled:           r.policy.Enabled,
-		WhoCanRecord:      r.policy.WhoCanRecord.String(),
-		AutoRecord:        r.policy.AutoRecord,
-		RecordAudio:       r.policy.RecordAudio,
-		RecordVideo:       r.policy.RecordVideo,
-		RecordScreenshare: r.policy.RecordScreenshare,
-		SnapshotTime:      r.startTime,
+		RecordingID:            r.recordingID,
+		RoomID:                 r.roomID,
+		Enabled:                r.policy.Enabled,
+		WhoCanRecord:           r.policy.WhoCanRecord.String(),
+		AutoRecord:             r.policy.AutoRecord,
+		RecordAudio:            r.policy.RecordAudio,
+		RecordVideo:            r.policy.RecordVideo,
+		RecordScreenshare:      r.policy.RecordScreenshare,
+		WhoCanAccessRecordings: r.policy.WhoCanAccessRecordings.String(),
+		AllowedAccessorIds:     r.policy.AllowedAccessorIds,
+		SnapshotTime:           r.startTime,
 	}
 
 	return r.storage.WritePolicy(r.storageCtx, r.roomID, r.recordingID, snapshot)

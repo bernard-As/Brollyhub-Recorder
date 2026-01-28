@@ -8,12 +8,41 @@ import (
 
 // Policy represents recording policy settings
 type Policy struct {
-	Enabled           bool
-	WhoCanRecord      WhoCanRecord
-	AutoRecord        bool
-	RecordAudio       bool
-	RecordVideo       bool
-	RecordScreenshare bool
+	Enabled                bool
+	WhoCanRecord           WhoCanRecord
+	AutoRecord             bool
+	RecordAudio            bool
+	RecordVideo            bool
+	RecordScreenshare      bool
+	WhoCanAccessRecordings AccessLevel
+	AllowedAccessorIds     []string
+}
+
+// AccessLevel defines post-meeting recording access
+type AccessLevel int
+
+const (
+	AccessLevelUnspecified AccessLevel = iota
+	AccessAll
+	AccessHost
+	AccessLoggedIn
+	AccessSelected
+)
+
+// String returns the string representation of AccessLevel
+func (a AccessLevel) String() string {
+	switch a {
+	case AccessAll:
+		return "all"
+	case AccessHost:
+		return "host"
+	case AccessLoggedIn:
+		return "logged_in"
+	case AccessSelected:
+		return "selected"
+	default:
+		return "unspecified"
+	}
 }
 
 // WhoCanRecord defines who has permission to record
@@ -42,24 +71,28 @@ func PolicyFromProto(p *pb.RecordingPolicy) *Policy {
 	}
 
 	return &Policy{
-		Enabled:           p.Enabled,
-		WhoCanRecord:      WhoCanRecord(p.WhoCanRecord),
-		AutoRecord:        p.AutoRecord,
-		RecordAudio:       p.RecordAudio,
-		RecordVideo:       p.RecordVideo,
-		RecordScreenshare: p.RecordScreenshare,
+		Enabled:                p.Enabled,
+		WhoCanRecord:           WhoCanRecord(p.WhoCanRecord),
+		AutoRecord:             p.AutoRecord,
+		RecordAudio:            p.RecordAudio,
+		RecordVideo:            p.RecordVideo,
+		RecordScreenshare:      p.RecordScreenshare,
+		WhoCanAccessRecordings: AccessLevel(p.WhoCanAccessRecordings),
+		AllowedAccessorIds:     p.AllowedAccessorIds,
 	}
 }
 
 // ToProto converts internal Policy to protobuf RecordingPolicy
 func (p *Policy) ToProto() *pb.RecordingPolicy {
 	return &pb.RecordingPolicy{
-		Enabled:           p.Enabled,
-		WhoCanRecord:      pb.WhoCanRecord(p.WhoCanRecord),
-		AutoRecord:        p.AutoRecord,
-		RecordAudio:       p.RecordAudio,
-		RecordVideo:       p.RecordVideo,
-		RecordScreenshare: p.RecordScreenshare,
+		Enabled:                p.Enabled,
+		WhoCanRecord:           pb.WhoCanRecord(p.WhoCanRecord),
+		AutoRecord:             p.AutoRecord,
+		RecordAudio:            p.RecordAudio,
+		RecordVideo:            p.RecordVideo,
+		RecordScreenshare:      p.RecordScreenshare,
+		WhoCanAccessRecordings: pb.AccessLevel(p.WhoCanAccessRecordings),
+		AllowedAccessorIds:     p.AllowedAccessorIds,
 	}
 }
 

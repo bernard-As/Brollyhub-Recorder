@@ -209,11 +209,13 @@ message ActiveSpeakerEvent {
 
 message RecordingPolicy {
   bool enabled = 1;
-  WhoCanRecord who_can_record = 2;
+  WhoCanRecord who_can_record = 2;           // Placeholder for future participant recording
   bool auto_record = 3;
   bool record_audio = 4;
   bool record_video = 5;
   bool record_screenshare = 6;
+  AccessLevel who_can_access_recordings = 7; // Post-meeting access control
+  repeated string allowed_accessor_ids = 8;  // User IDs when ACCESS_SELECTED
 }
 
 enum WhoCanRecord {
@@ -221,6 +223,14 @@ enum WhoCanRecord {
   HOST_ONLY = 1;
   CO_HOST_AND_HOST = 2;
   ANYONE = 3;
+}
+
+enum AccessLevel {
+  ACCESS_LEVEL_UNSPECIFIED = 0;
+  ACCESS_ALL = 1;
+  ACCESS_HOST = 2;
+  ACCESS_LOGGED_IN = 3;
+  ACCESS_SELECTED = 4;
 }
 
 enum TrackType {

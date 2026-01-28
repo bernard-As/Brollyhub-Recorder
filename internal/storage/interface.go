@@ -96,13 +96,15 @@ type TimelineEvent struct {
 
 // PolicySnapshot contains the recording policy at start time
 type PolicySnapshot struct {
-	RecordingID     string `json:"recording_id"`
-	RoomID          string `json:"room_id"`
-	Enabled         bool   `json:"enabled"`
-	WhoCanRecord    string `json:"who_can_record"`
-	AutoRecord      bool   `json:"auto_record"`
-	RecordAudio     bool   `json:"record_audio"`
-	RecordVideo     bool   `json:"record_video"`
-	RecordScreenshare bool `json:"record_screenshare"`
-	SnapshotTime    time.Time `json:"snapshot_time"`
+	RecordingID            string    `json:"recording_id"`
+	RoomID                 string    `json:"room_id"`
+	Enabled                bool      `json:"enabled"`
+	WhoCanRecord           string    `json:"who_can_record"`
+	AutoRecord             bool      `json:"auto_record"`
+	RecordAudio            bool      `json:"record_audio"`
+	RecordVideo            bool      `json:"record_video"`
+	RecordScreenshare      bool      `json:"record_screenshare"`
+	WhoCanAccessRecordings string    `json:"who_can_access_recordings"`
+	AllowedAccessorIds     []string  `json:"allowed_accessor_ids,omitempty"`
+	SnapshotTime           time.Time `json:"snapshot_time"`
 }
