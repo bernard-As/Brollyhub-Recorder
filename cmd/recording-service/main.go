@@ -57,13 +57,13 @@ func main() {
 		logger.Fatal("Failed to create storage", zap.Error(err))
 	}
 
-	// Check storage health
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	if err := store.Health(ctx); err != nil {
-		logger.Warn("Storage health check failed - service will continue but recordings may fail",
+	// Ensure bucket exists (create if not)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := store.EnsureBucket(ctx); err != nil {
+		logger.Warn("Failed to ensure bucket exists - service will continue but recordings may fail",
 			zap.Error(err))
 	} else {
-		logger.Info("Storage connection verified")
+		logger.Info("Storage bucket ready", zap.String("bucket", cfg.Storage.Bucket))
 	}
 	cancel()
 

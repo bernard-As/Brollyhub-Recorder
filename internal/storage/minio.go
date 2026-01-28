@@ -58,6 +58,31 @@ func NewMinIOStorage(cfg MinIOConfig, logger *zap.Logger) (*MinIOStorage, error)
 	return storage, nil
 }
 
+// EnsureBucket creates the bucket if it doesn't exist
+func (s *MinIOStorage) EnsureBucket(ctx context.Context) error {
+	// Check if bucket exists
+	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if err == nil {
+		// Bucket exists
+		s.logger.Info("Bucket exists", zap.String("bucket", s.bucket))
+		return nil
+	}
+
+	// Try to create the bucket
+	s.logger.Info("Bucket does not exist, creating...", zap.String("bucket", s.bucket))
+	_, err = s.client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create bucket %s: %w", s.bucket, err)
+	}
+
+	s.logger.Info("Bucket created successfully", zap.String("bucket", s.bucket))
+	return nil
+}
+
 // CreateRecording initializes a new recording directory structure
 func (s *MinIOStorage) CreateRecording(ctx context.Context, roomID, recordingID string) error {
 	// Create a marker file to establish the recording structure
