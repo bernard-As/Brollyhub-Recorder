@@ -24,7 +24,7 @@ SFU (MediaSoup)                          Recording Service (Go)
          ┌─────────────────────┐
          │ MinIO (minio:9100)  │
          │ recordings-private/ │
-         │  └─ rooms/{id}/     │
+         │  └─ rooms/{id}/     │/s
          │     ├─ metadata.json│
          │     ├─ timeline.json│
          │     └─ tracks/*.rtp │
