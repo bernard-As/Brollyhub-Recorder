@@ -227,6 +227,14 @@ func (s *Server) handleRoomEvent(event *pb.RoomEvent) error {
 			zap.String("room_id", event.RoomId),
 			zap.String("producer_id", e.ProducerClosed.ProducerId),
 			zap.String("peer_id", e.ProducerClosed.PeerId))
+		if !s.manager.HasActiveRecording(event.RoomId) {
+			return nil
+		}
+
+		if !s.manager.HasTrack(event.RoomId, e.ProducerClosed.ProducerId) {
+			return nil
+		}
+
 		err := s.manager.RemoveTrack(event.RoomId, e.ProducerClosed.ProducerId)
 		if err != nil {
 			s.logger.Error("Failed to remove track on producer close",

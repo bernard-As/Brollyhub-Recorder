@@ -114,6 +114,16 @@ func (m *Manager) HasActiveRecording(roomID string) bool {
 	return exists
 }
 
+// HasTrack checks if a producer track exists for a room recording.
+func (m *Manager) HasTrack(roomID, producerID string) bool {
+	recording, exists := m.GetRecording(roomID)
+	if !exists {
+		return false
+	}
+
+	return recording.HasTrack(producerID)
+}
+
 // AddTrack adds a track to a room's recording
 func (m *Manager) AddTrack(roomID, producerID, peerID, codec string, ssrc uint32, payloadType uint8, trackType TrackType) error {
 	recording, exists := m.GetRecording(roomID)

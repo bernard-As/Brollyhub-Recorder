@@ -157,6 +157,15 @@ func (r *RoomRecording) Status() RecordingStatus {
 	return r.status
 }
 
+// HasTrack checks if a producer track exists in this recording.
+func (r *RoomRecording) HasTrack(producerID string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	_, exists := r.tracks[producerID]
+	return exists
+}
+
 // StartTime returns when recording started
 func (r *RoomRecording) StartTime() time.Time {
 	return r.startTime

@@ -1,20 +1,74 @@
-[+] Running 4/4
- ✔ recording-service                        Built                                                                0.0s 
- ✔ Volume "recording_recording-redis-data"  Created                                                              0.0s 
- ✔ Container recording-redis                Created                                                              0.1s 
- ✔ Container recording-service              Created                                                              0.1s 
-Attaching to recording-redis, recording-service
-recording-redis    | 1:C 30 Jan 2026 20:04:54.843 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
-recording-redis    | 1:C 30 Jan 2026 20:04:54.843 * Redis version=7.4.7, bits=64, commit=00000000, modified=0, pid=1, just started
-recording-redis    | 1:C 30 Jan 2026 20:04:54.843 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
-recording-redis    | 1:M 30 Jan 2026 20:04:54.849 * monotonic clock: POSIX clock_gettime
-recording-redis    | 1:M 30 Jan 2026 20:04:54.861 * Running mode=standalone, port=6379.
-recording-redis    | 1:M 30 Jan 2026 20:04:54.862 * Server initialized
-recording-redis    | 1:M 30 Jan 2026 20:04:54.867 * Ready to accept connections tcp
-recording-service  | {"level":"info","ts":1769803496.0022159,"caller":"recording-service/main.go:42","msg":"Starting Recording Service","grpc_address":"0.0.0.0:50075","storage_endpoint":"minio:9100","storage_bucket":"recordings-private"}
-recording-service  | {"level":"info","ts":1769803496.0366995,"caller":"storage/minio.go:69","msg":"Bucket exists","bucket":"recordings-private"}
-recording-service  | {"level":"info","ts":1769803496.0385914,"caller":"recording-service/main.go:66","msg":"Storage bucket ready","bucket":"recordings-private"}
-recording-service  | {"level":"info","ts":1769803496.038763,"caller":"recording-service/main.go:201","msg":"Health server starting","address":":50076"}
-recording-service  | {"level":"info","ts":1769803496.0467253,"caller":"grpc/server.go:85","msg":"gRPC server starting","address":"0.0.0.0:50075","service_id":"d282f420-f8b9-4389-a6da-255149a0574c"}
-recording-service  | {"level":"info","ts":1769803507.052075,"caller":"grpc/server.go:124","msg":"New SFU connection attempt"}
-recording-service  | {"level":"info","ts":1769803507.0600991,"caller":"grpc/handlers.go:31","msg":"SFU registered","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com","sfu_port":4453}
+recording-service  | {"level":"info","ts":1769819281.1116455,"caller":"recording-service/main.go:42","msg":"Starting Recording Service","grpc_address":"0.0.0.0:50075","storage_endpoint":"minio:9100","storage_bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769819281.1972945,"caller":"storage/minio.go:69","msg":"Bucket exists","bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769819281.197392,"caller":"recording-service/main.go:66","msg":"Storage bucket ready","bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769819281.1977048,"caller":"recording-service/main.go:201","msg":"Health server starting","address":":50076"}
+recording-service  | {"level":"info","ts":1769819281.1986225,"caller":"grpc/server.go:85","msg":"gRPC server starting","address":"0.0.0.0:50075","service_id":"96c3a2b9-acfa-48c3-a3a8-69486ba343bc"}
+recording-service  | {"level":"info","ts":1769823830.9426942,"caller":"recording-service/main.go:42","msg":"Starting Recording Service","grpc_address":"0.0.0.0:50075","storage_endpoint":"minio:9100","storage_bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769823830.989786,"caller":"storage/minio.go:69","msg":"Bucket exists","bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769823830.9898968,"caller":"recording-service/main.go:66","msg":"Storage bucket ready","bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769823830.9900682,"caller":"recording-service/main.go:201","msg":"Health server starting","address":":50076"}
+recording-service  | {"level":"info","ts":1769823830.9906352,"caller":"grpc/server.go:85","msg":"gRPC server starting","address":"0.0.0.0:50075","service_id":"6f8057c1-230e-4a6a-a836-7316ecc9f032"}
+recording-service  | {"level":"info","ts":1769824207.639474,"caller":"grpc/server.go:124","msg":"New SFU connection attempt"}
+recording-service  | {"level":"info","ts":1769824207.6659951,"caller":"grpc/handlers.go:31","msg":"SFU registered","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com","sfu_port":4453}
+recording-service  | {"level":"error","ts":1769824777.078974,"caller":"grpc/server.go:139","msg":"Error receiving from SFU","error":"rpc error: code = Canceled desc = context canceled","stacktrace":"github.com/brollyhub/recording/internal/grpc.(*Server).Connect.func1\n\t/app/internal/grpc/server.go:139"}
+recording-service  | {"level":"info","ts":1769824777.0881038,"caller":"grpc/server.go:202","msg":"SFU disconnected","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com"}
+recording-service  | {"level":"warn","ts":1769824777.6663435,"caller":"grpc/server.go:249","msg":"Failed to send heartbeat","error":"rpc error: code = Unavailable desc = transport is closing"}
+recording-service  | {"level":"info","ts":1769824896.1015654,"caller":"grpc/server.go:124","msg":"New SFU connection attempt"}
+recording-service  | {"level":"info","ts":1769824896.1128414,"caller":"grpc/handlers.go:31","msg":"SFU registered","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com","sfu_port":4453}
+recording-service  | {"level":"error","ts":1769825032.2454069,"caller":"grpc/server.go:139","msg":"Error receiving from SFU","error":"rpc error: code = Canceled desc = context canceled","stacktrace":"github.com/brollyhub/recording/internal/grpc.(*Server).Connect.func1\n\t/app/internal/grpc/server.go:139"}
+recording-service  | {"level":"info","ts":1769825032.2462425,"caller":"grpc/server.go:202","msg":"SFU disconnected","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com"}
+recording-service  | {"level":"warn","ts":1769825036.1150353,"caller":"grpc/server.go:249","msg":"Failed to send heartbeat","error":"rpc error: code = Unavailable desc = transport is closing"}
+recording-service  | {"level":"info","ts":1769825058.0301702,"caller":"grpc/server.go:124","msg":"New SFU connection attempt"}
+recording-service  | {"level":"info","ts":1769825058.03035,"caller":"grpc/handlers.go:31","msg":"SFU registered","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com","sfu_port":4453}
+recording-redis    | 1:C 31 Jan 2026 00:28:00.637 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+recording-redis    | 1:C 31 Jan 2026 00:28:00.637 * Redis version=7.4.7, bits=64, commit=00000000, modified=0, pid=1, just started
+recording-redis    | 1:C 31 Jan 2026 00:28:00.637 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+recording-redis    | 1:M 31 Jan 2026 00:28:00.638 * monotonic clock: POSIX clock_gettime
+recording-redis    | 1:M 31 Jan 2026 00:28:00.642 * Running mode=standalone, port=6379.
+recording-redis    | 1:M 31 Jan 2026 00:28:00.643 * Server initialized
+recording-redis    | 1:M 31 Jan 2026 00:28:00.646 * Ready to accept connections tcp
+recording-redis    | 1:C 31 Jan 2026 01:43:48.820 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+recording-redis    | 1:C 31 Jan 2026 01:43:48.820 * Redis version=7.4.7, bits=64, commit=00000000, modified=0, pid=1, just started
+recording-redis    | 1:C 31 Jan 2026 01:43:48.821 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+recording-redis    | 1:M 31 Jan 2026 01:43:48.821 * monotonic clock: POSIX clock_gettime
+recording-redis    | 1:M 31 Jan 2026 01:43:48.822 * Running mode=standalone, port=6379.
+recording-redis    | 1:M 31 Jan 2026 01:43:48.859 * Server initialized
+recording-redis    | 1:M 31 Jan 2026 01:43:48.860 * Ready to accept connections tcp
+recording-service  | {"level":"info","ts":1769825363.8162165,"caller":"grpc/handlers.go:53","msg":"Start recording request","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825363.899039,"caller":"storage/minio.go:100","msg":"Created recording structure","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a"}
+recording-service  | {"level":"info","ts":1769825363.9412858,"caller":"recording/room.go:135","msg":"Room recording started","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825363.941351,"caller":"recording/manager.go:68","msg":"Recording started","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825363.992522,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"73fd338b-1873-46b4-abe8-60a56f60b094","peer_id":"111","track_type":"audio"}
+recording-service  | {"level":"info","ts":1769825364.027942,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"c61b12c2-c548-4c53-a0c2-67ca6cfc4306","peer_id":"111","track_type":"video"}
+recording-service  | {"level":"info","ts":1769825364.0707169,"caller":"grpc/handlers.go:240","msg":"Peer joined event","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","peer_id":"111","display_name":"111"}
+recording-service  | {"level":"info","ts":1769825388.8658676,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"261092ce-8635-4c53-84c6-b827a35e93b3","peer_id":"111","track_type":"audio"}
+recording-service  | {"level":"info","ts":1769825396.3263047,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"bcbb5089-33af-4145-a3f6-388677c94486","peer_id":"111","track_type":"video"}
+recording-service  | {"level":"info","ts":1769825402.0328243,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"f27c66a3-6cb6-4d18-87f3-2bc4a198e751","peer_id":"111","track_type":"audio"}
+recording-service  | {"level":"info","ts":1769825405.5243528,"caller":"grpc/handlers.go:247","msg":"Peer left event","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","peer_id":"111"}
+recording-service  | {"level":"info","ts":1769825405.5317483,"caller":"grpc/handlers.go:93","msg":"Stop recording request","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a","stopped_by":"system-room-close"}
+recording-service  | {"level":"info","ts":1769825405.7158315,"caller":"storage/minio.go:213","msg":"Finalized recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a"}
+recording-service  | {"level":"info","ts":1769825405.7158847,"caller":"recording/room.go:398","msg":"Recording completed","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a","duration":41.81608442}
+recording-service  | {"level":"info","ts":1769825405.7159007,"caller":"recording/manager.go:91","msg":"Recording stopped","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"c746b062-ede7-48a9-b187-7c0a4fce071a","stopped_by":"system-room-close"}
+recording-service  | {"level":"info","ts":1769825414.1325889,"caller":"grpc/handlers.go:53","msg":"Start recording request","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825414.1429143,"caller":"storage/minio.go:100","msg":"Created recording structure","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"da726bb0-7098-4b1a-8e95-56c27c6a31b6"}
+recording-service  | {"level":"info","ts":1769825414.155782,"caller":"recording/room.go:135","msg":"Room recording started","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"da726bb0-7098-4b1a-8e95-56c27c6a31b6","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825414.1561062,"caller":"recording/manager.go:68","msg":"Recording started","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"da726bb0-7098-4b1a-8e95-56c27c6a31b6","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825414.183719,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"91f5d5d7-3a82-4acf-b506-fcde2b2ad9c8","peer_id":"111","track_type":"audio"}
+recording-service  | {"level":"info","ts":1769825414.1855397,"caller":"grpc/handlers.go:240","msg":"Peer joined event","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","peer_id":"111","display_name":"111"}
+recording-service  | {"level":"info","ts":1769825414.6725514,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"b66e0269-86b4-44dc-be08-e1bfe2fa3830","peer_id":"111","track_type":"video"}
+recording-service  | {"level":"error","ts":1769825428.888249,"caller":"grpc/server.go:139","msg":"Error receiving from SFU","error":"rpc error: code = Canceled desc = context canceled","stacktrace":"github.com/brollyhub/recording/internal/grpc.(*Server).Connect.func1\n\t/app/internal/grpc/server.go:139"}
+recording-service  | {"level":"info","ts":1769825428.889846,"caller":"grpc/server.go:202","msg":"SFU disconnected","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com"}
+recording-service  | {"level":"info","ts":1769825429.0426066,"caller":"storage/minio.go:213","msg":"Finalized recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"da726bb0-7098-4b1a-8e95-56c27c6a31b6"}
+recording-service  | {"level":"info","ts":1769825429.0426767,"caller":"recording/room.go:398","msg":"Recording completed","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"da726bb0-7098-4b1a-8e95-56c27c6a31b6","duration":14.899714579}
+recording-service  | {"level":"info","ts":1769825429.0426953,"caller":"recording/manager.go:91","msg":"Recording stopped","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"da726bb0-7098-4b1a-8e95-56c27c6a31b6","stopped_by":"sfu_disconnected"}
+recording-service  | {"level":"warn","ts":1769825438.0309353,"caller":"grpc/server.go:249","msg":"Failed to send heartbeat","error":"rpc error: code = Unavailable desc = transport is closing"}
+recording-service  | {"level":"info","ts":1769825450.4372873,"caller":"grpc/server.go:124","msg":"New SFU connection attempt"}
+recording-service  | {"level":"info","ts":1769825450.4374335,"caller":"grpc/handlers.go:31","msg":"SFU registered","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com","sfu_port":4453}
+recording-service  | {"level":"info","ts":1769825483.4612272,"caller":"grpc/handlers.go:53","msg":"Start recording request","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825483.4739664,"caller":"storage/minio.go:100","msg":"Created recording structure","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"bb47b2f8-3227-40e6-9f2b-548c97066c6d"}
+recording-service  | {"level":"info","ts":1769825483.4792438,"caller":"recording/room.go:135","msg":"Room recording started","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"bb47b2f8-3227-40e6-9f2b-548c97066c6d","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825483.479297,"caller":"recording/manager.go:68","msg":"Recording started","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","recording_id":"bb47b2f8-3227-40e6-9f2b-548c97066c6d","requested_by":"system"}
+recording-service  | {"level":"info","ts":1769825483.497474,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"c0ab2674-f2c3-4fa3-bd69-6fa97ef9e091","peer_id":"111","track_type":"audio"}
+recording-service  | {"level":"info","ts":1769825483.503401,"caller":"grpc/handlers.go:240","msg":"Peer joined event","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","peer_id":"111","display_name":"111"}
+recording-service  | {"level":"info","ts":1769825490.2751179,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"498f3dd6-16ac-4ba7-8d5f-78b07f47dfea","peer_id":"111","track_type":"video"}
+recording-service  | {"level":"info","ts":1769825498.865941,"caller":"recording/room.go:218","msg":"Track added to recording","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","room_id":"44f74eaa-5245-4018-b7f5-9aab0791c47a","producer_id":"081835a8-a6fe-4740-8432-72d70818cc17","peer_id":"111","track_type":"video"}
