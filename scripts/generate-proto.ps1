@@ -6,7 +6,7 @@ Set-Location D:\recording
 
 Write-Host "Generating Go proto files..."
 
-& $protoc --proto_path=proto --go_out=proto --go_opt=paths=source_relative --go-grpc_out=proto --go-grpc_opt=paths=source_relative proto/recording_sfu.proto
+& $protoc --proto_path=proto --go_out=proto --go_opt=paths=source_relative --go-grpc_out=proto --go-grpc_opt=paths=source_relative proto/recording_sfu.proto proto/recording_shelves.proto
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Proto files generated successfully!"

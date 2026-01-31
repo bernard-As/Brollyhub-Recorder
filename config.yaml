@@ -19,6 +19,12 @@ recording:
   max_tracks_per_room: 50
   heartbeat_interval: 10s
 
+shelves:
+  host: "shelves-grpc"
+  port: 50070
+  timeout: 5s
+  enabled: true
+
 logging:
   level: "info"
   format: "json"

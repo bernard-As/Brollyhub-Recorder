@@ -7,7 +7,7 @@ set PATH=C:\Users\montf\go\bin;%PATH%
 cd /d D:\recording
 
 echo Generating Go proto files...
-%PROTOC% --proto_path=proto --go_out=proto --go_opt=paths=source_relative --go-grpc_out=proto --go-grpc_opt=paths=source_relative proto/recording_sfu.proto
+%PROTOC% --proto_path=proto --go_out=proto --go_opt=paths=source_relative --go-grpc_out=proto --go-grpc_opt=paths=source_relative proto/recording_sfu.proto proto/recording_shelves.proto
 
 if %ERRORLEVEL% EQU 0 (
     echo Proto files generated successfully!

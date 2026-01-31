@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package shelves.recording;
+
+option go_package = "github.com/brollyhub/recording/proto";
+
+service RecordingShelfBridge {
+  rpc UpsertRoomRecording(UpsertRoomRecordingRequest) returns (UpsertRoomRecordingResponse);
+}
+
+enum RecordingStatus {
+  RECORDING_STATUS_UNSPECIFIED = 0;
+  RECORDING_STATUS_RECORDING = 1;
+  RECORDING_STATUS_COMPLETED = 2;
+  RECORDING_STATUS_FAILED = 3;
+}
+
+message UpsertRoomRecordingRequest {
+  string room_id = 1;
+  string recording_id = 2;
+  RecordingStatus status = 3;
+  int64 started_at = 4;
+  int64 completed_at = 5;
+  string s3_prefix = 6;
+  string metadata_key = 7;
+  string timeline_key = 8;
+  string service_id = 9;
+}
+
+message UpsertRoomRecordingResponse {
+  bool success = 1;
+  string message = 2;
+  string room_id = 3;
+  string recording_id = 4;
+}

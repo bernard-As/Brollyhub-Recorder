@@ -1,9 +1,11 @@
 package grpc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/brollyhub/recording/internal/recording"
+	"github.com/brollyhub/recording/internal/shelves"
 	pb "github.com/brollyhub/recording/proto"
 	"go.uber.org/zap"
 )
@@ -75,7 +77,7 @@ func (s *Server) handleStartRecording(stream pb.RecordingSfuBridge_ConnectServer
 		})
 	}
 
-	return stream.Send(&pb.RecordingToSfu{
+	resp := &pb.RecordingToSfu{
 		Message: &pb.RecordingToSfu_StartRecordingResponse{
 			StartRecordingResponse: &pb.StartRecordingResponse{
 				Success:     true,
@@ -85,7 +87,14 @@ func (s *Server) handleStartRecording(stream pb.RecordingSfuBridge_ConnectServer
 				StartedAt:   rec.StartTime().UnixMilli(),
 			},
 		},
-	})
+	}
+
+	if err := stream.Send(resp); err != nil {
+		return err
+	}
+
+	s.notifyRoomRecording(req.RoomId, rec.RecordingID(), pb.RecordingStatus_RECORDING_STATUS_RECORDING, rec.StartTime(), time.Time{})
+	return nil
 }
 
 // handleStopRecording handles recording stop requests
@@ -98,8 +107,15 @@ func (s *Server) handleStopRecording(stream pb.RecordingSfuBridge_ConnectServer,
 	// Get recording stats before stopping
 	rec, exists := s.manager.GetRecording(req.RoomId)
 	var stats recording.RecordingStats
+	var startTime time.Time
+	var recordingID string
 	if exists {
 		stats = rec.Stats()
+		startTime = rec.StartTime()
+		recordingID = rec.RecordingID()
+	}
+	if recordingID == "" {
+		recordingID = req.RecordingId
 	}
 
 	// Stop recording
@@ -121,11 +137,11 @@ func (s *Server) handleStopRecording(stream pb.RecordingSfuBridge_ConnectServer,
 		})
 	}
 
-	return stream.Send(&pb.RecordingToSfu{
+	resp := &pb.RecordingToSfu{
 		Message: &pb.RecordingToSfu_StopRecordingResponse{
 			StopRecordingResponse: &pb.StopRecordingResponse{
 				Success:     true,
-				RecordingId: req.RecordingId,
+				RecordingId: recordingID,
 				RoomId:      req.RoomId,
 				Message:     "Recording stopped",
 				StoppedAt:   time.Now().UnixMilli(),
@@ -137,7 +153,15 @@ func (s *Server) handleStopRecording(stream pb.RecordingSfuBridge_ConnectServer,
 				},
 			},
 		},
-	})
+	}
+
+	if err := stream.Send(resp); err != nil {
+		return err
+	}
+
+	stoppedAt := time.Now()
+	s.notifyRoomRecording(req.RoomId, recordingID, pb.RecordingStatus_RECORDING_STATUS_COMPLETED, startTime, stoppedAt)
+	return nil
 }
 
 // handleSubscribeTrack handles track subscription requests
@@ -291,4 +315,35 @@ func (s *Server) handleHeartbeat(stream pb.RecordingSfuBridge_ConnectServer, hb 
 			},
 		},
 	})
+}
+
+func (s *Server) notifyRoomRecording(roomID, recordingID string, status pb.RecordingStatus, startedAt, completedAt time.Time) {
+	if s.shelvesClient == nil {
+		return
+	}
+
+	prefix := fmt.Sprintf("rooms/%s/%s/", roomID, recordingID)
+	metadataKey := fmt.Sprintf("%smetadata.json", prefix)
+	timelineKey := fmt.Sprintf("%stimeline.json", prefix)
+
+	req := shelves.UpsertRequest{
+		RoomID:      roomID,
+		RecordingID: recordingID,
+		Status:      status,
+		StartedAt:   startedAt.UnixMilli(),
+		S3Prefix:    prefix,
+		MetadataKey: metadataKey,
+		TimelineKey: timelineKey,
+		ServiceID:   s.serviceID,
+	}
+
+	if !completedAt.IsZero() {
+		req.CompletedAt = completedAt.UnixMilli()
+	}
+
+	go func() {
+		if err := s.shelvesClient.UpsertRoomRecording(nil, req); err != nil {
+			s.logger.Warn("Failed to notify shelves", zap.Error(err))
+		}
+	}()
 }

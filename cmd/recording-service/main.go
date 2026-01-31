@@ -14,6 +14,7 @@ import (
 	"github.com/brollyhub/recording/internal/config"
 	grpcserver "github.com/brollyhub/recording/internal/grpc"
 	"github.com/brollyhub/recording/internal/recording"
+	"github.com/brollyhub/recording/internal/shelves"
 	"github.com/brollyhub/recording/internal/storage"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -69,19 +70,26 @@ func main() {
 
 	// Setup recording manager
 	manager := recording.NewManager(recording.ManagerConfig{
-		Storage:       store,
-		Logger:        logger,
-		BufferSize:    cfg.Recording.BufferSize,
-		FlushInterval: cfg.Recording.FlushInterval,
+		Storage:         store,
+		Logger:          logger,
+		BufferSize:      cfg.Recording.BufferSize,
+		FlushInterval:   cfg.Recording.FlushInterval,
 		SegmentDuration: cfg.Recording.SegmentDuration,
 		SegmentMaxBytes: cfg.Recording.SegmentMaxBytes,
 	})
 
+	// Setup Shelves notifier client (optional)
+	shelvesClient, err := shelves.NewClient(cfg.Shelves, logger)
+	if err != nil {
+		logger.Warn("Failed to connect to Shelves gRPC", zap.Error(err))
+	}
+
 	// Setup gRPC server
 	server := grpcserver.NewServer(grpcserver.ServerConfig{
-		Config:  &cfg.GRPC,
-		Manager: manager,
-		Logger:  logger,
+		Config:        &cfg.GRPC,
+		Manager:       manager,
+		Logger:        logger,
+		ShelvesClient: shelvesClient,
 	})
 
 	// Start health check HTTP server
@@ -127,6 +135,12 @@ func main() {
 		logger.Warn("Recording manager shutdown error", zap.Error(err))
 	}
 
+	if shelvesClient != nil {
+		if err := shelvesClient.Close(); err != nil {
+			logger.Warn("Shelves client shutdown error", zap.Error(err))
+		}
+	}
+
 	logger.Info("Recording Service stopped")
 }
 
@@ -162,10 +176,10 @@ func startHealthServer(port int, server *grpcserver.Server, manager *recording.M
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		health := map[string]interface{}{
-			"healthy":            true,
-			"service_id":         server.ServiceID(),
-			"sfu_connected":      server.IsConnected(),
-			"active_recordings":  manager.ActiveRecordings(),
+			"healthy":           true,
+			"service_id":        server.ServiceID(),
+			"sfu_connected":     server.IsConnected(),
+			"active_recordings": manager.ActiveRecordings(),
 		}
 
 		// Check storage health

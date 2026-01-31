@@ -10,6 +10,7 @@ import (
 
 	"github.com/brollyhub/recording/internal/config"
 	"github.com/brollyhub/recording/internal/recording"
+	"github.com/brollyhub/recording/internal/shelves"
 	pb "github.com/brollyhub/recording/proto"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -28,6 +29,7 @@ type Server struct {
 	logger          *zap.Logger
 	serviceID       string
 	connectedSFU    *SFUConnection
+	shelvesClient   *shelves.Client
 	heartbeatTicker *time.Ticker
 	done            chan struct{}
 }
@@ -42,19 +44,21 @@ type SFUConnection struct {
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
-	Config  *config.GRPCConfig
-	Manager *recording.Manager
-	Logger  *zap.Logger
+	Config        *config.GRPCConfig
+	Manager       *recording.Manager
+	Logger        *zap.Logger
+	ShelvesClient *shelves.Client
 }
 
 // NewServer creates a new gRPC server
 func NewServer(cfg ServerConfig) *Server {
 	return &Server{
-		config:    cfg.Config,
-		manager:   cfg.Manager,
-		logger:    cfg.Logger,
-		serviceID: uuid.New().String(),
-		done:      make(chan struct{}),
+		config:        cfg.Config,
+		manager:       cfg.Manager,
+		logger:        cfg.Logger,
+		serviceID:     uuid.New().String(),
+		shelvesClient: cfg.ShelvesClient,
+		done:          make(chan struct{}),
 	}
 }
 
@@ -205,10 +209,21 @@ func (s *Server) handleDisconnect() {
 
 		// Stop all active recordings from this SFU
 		for _, roomID := range s.manager.ListActiveRecordings() {
+			rec, exists := s.manager.GetRecording(roomID)
+			var startTime time.Time
+			var recordingID string
+			if exists {
+				startTime = rec.StartTime()
+				recordingID = rec.RecordingID()
+			}
 			if err := s.manager.StopRecording(roomID, "sfu_disconnected"); err != nil {
 				s.logger.Warn("Failed to stop recording on disconnect",
 					zap.String("room_id", roomID),
 					zap.Error(err))
+				continue
+			}
+			if recordingID != "" {
+				s.notifyRoomRecording(roomID, recordingID, pb.RecordingStatus_RECORDING_STATUS_FAILED, startTime, time.Now())
 			}
 		}
 	}

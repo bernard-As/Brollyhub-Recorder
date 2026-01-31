@@ -13,6 +13,7 @@ type Config struct {
 	GRPC      GRPCConfig      `yaml:"grpc"`
 	Storage   StorageConfig   `yaml:"storage"`
 	Recording RecordingConfig `yaml:"recording"`
+	Shelves   ShelvesConfig   `yaml:"shelves"`
 	Logging   LoggingConfig   `yaml:"logging"`
 }
 
@@ -43,6 +44,14 @@ type RecordingConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	SegmentDuration   time.Duration `yaml:"segment_duration"`
 	SegmentMaxBytes   int64         `yaml:"segment_max_bytes"`
+}
+
+// ShelvesConfig holds Shelves gRPC configuration
+type ShelvesConfig struct {
+	Host    string        `yaml:"host"`
+	Port    int           `yaml:"port"`
+	Timeout time.Duration `yaml:"timeout"`
+	Enabled bool          `yaml:"enabled"`
 }
 
 // LoggingConfig holds logging configuration
@@ -107,6 +116,13 @@ func (c *Config) setDefaults() {
 		SegmentMaxBytes:   70 * 1024 * 1024, // 70MB
 	}
 
+	c.Shelves = ShelvesConfig{
+		Host:    "shelves-grpc",
+		Port:    50070,
+		Timeout: 5 * time.Second,
+		Enabled: true,
+	}
+
 	c.Logging = LoggingConfig{
 		Level:  "info",
 		Format: "json",
@@ -163,9 +179,33 @@ func (c *Config) applyEnvOverrides() {
 			c.Recording.SegmentMaxBytes = bytes
 		}
 	}
+
+	// Shelves gRPC
+	if v := os.Getenv("RECORDING_SHELVES_GRPC_HOST"); v != "" {
+		c.Shelves.Host = v
+	}
+	if v := os.Getenv("RECORDING_SHELVES_GRPC_PORT"); v != "" {
+		var port int
+		if _, err := fmt.Sscanf(v, "%d", &port); err == nil {
+			c.Shelves.Port = port
+		}
+	}
+	if v := os.Getenv("RECORDING_SHELVES_GRPC_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			c.Shelves.Timeout = d
+		}
+	}
+	if v := os.Getenv("RECORDING_SHELVES_GRPC_ENABLED"); v != "" {
+		c.Shelves.Enabled = v == "true"
+	}
 }
 
 // Address returns the gRPC server address
 func (c *GRPCConfig) Address() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
+// Address returns the Shelves gRPC server address.
+func (c *ShelvesConfig) Address() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
