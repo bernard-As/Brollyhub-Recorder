@@ -231,7 +231,10 @@ func (r *RoomRecording) RemoveTrack(producerID string) error {
 
 	track, exists := r.tracks[producerID]
 	if !exists {
-		return nil // Track doesn't exist, nothing to remove
+		r.logger.Warn("RemoveTrack called but track not found",
+			zap.String("room_id", r.roomID),
+			zap.String("producer_id", producerID))
+		return nil
 	}
 
 	// Close the track and get the data

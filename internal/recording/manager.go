@@ -128,7 +128,10 @@ func (m *Manager) AddTrack(roomID, producerID, peerID, codec string, ssrc uint32
 func (m *Manager) RemoveTrack(roomID, producerID string) error {
 	recording, exists := m.GetRecording(roomID)
 	if !exists {
-		return nil // No active recording, silently ignore
+		m.logger.Warn("RemoveTrack called but no active recording",
+			zap.String("room_id", roomID),
+			zap.String("producer_id", producerID))
+		return nil
 	}
 
 	return recording.RemoveTrack(producerID)

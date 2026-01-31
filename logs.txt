@@ -1,0 +1,20 @@
+[+] Running 4/4
+ ✔ recording-service                        Built                                                                0.0s 
+ ✔ Volume "recording_recording-redis-data"  Created                                                              0.0s 
+ ✔ Container recording-redis                Created                                                              0.1s 
+ ✔ Container recording-service              Created                                                              0.1s 
+Attaching to recording-redis, recording-service
+recording-redis    | 1:C 30 Jan 2026 20:04:54.843 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+recording-redis    | 1:C 30 Jan 2026 20:04:54.843 * Redis version=7.4.7, bits=64, commit=00000000, modified=0, pid=1, just started
+recording-redis    | 1:C 30 Jan 2026 20:04:54.843 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+recording-redis    | 1:M 30 Jan 2026 20:04:54.849 * monotonic clock: POSIX clock_gettime
+recording-redis    | 1:M 30 Jan 2026 20:04:54.861 * Running mode=standalone, port=6379.
+recording-redis    | 1:M 30 Jan 2026 20:04:54.862 * Server initialized
+recording-redis    | 1:M 30 Jan 2026 20:04:54.867 * Ready to accept connections tcp
+recording-service  | {"level":"info","ts":1769803496.0022159,"caller":"recording-service/main.go:42","msg":"Starting Recording Service","grpc_address":"0.0.0.0:50075","storage_endpoint":"minio:9100","storage_bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769803496.0366995,"caller":"storage/minio.go:69","msg":"Bucket exists","bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769803496.0385914,"caller":"recording-service/main.go:66","msg":"Storage bucket ready","bucket":"recordings-private"}
+recording-service  | {"level":"info","ts":1769803496.038763,"caller":"recording-service/main.go:201","msg":"Health server starting","address":":50076"}
+recording-service  | {"level":"info","ts":1769803496.0467253,"caller":"grpc/server.go:85","msg":"gRPC server starting","address":"0.0.0.0:50075","service_id":"d282f420-f8b9-4389-a6da-255149a0574c"}
+recording-service  | {"level":"info","ts":1769803507.052075,"caller":"grpc/server.go:124","msg":"New SFU connection attempt"}
+recording-service  | {"level":"info","ts":1769803507.0600991,"caller":"grpc/handlers.go:31","msg":"SFU registered","sfu_id":"sfu-default","sfu_host":"sfu.brollyhub.com","sfu_port":4453}

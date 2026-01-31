@@ -172,7 +172,7 @@ func (s *Server) handleSubscribeTrack(stream pb.RecordingSfuBridge_ConnectServer
 
 // handleUnsubscribeTrack handles track unsubscription requests
 func (s *Server) handleUnsubscribeTrack(stream pb.RecordingSfuBridge_ConnectServer, req *pb.UnsubscribeTrackRequest) error {
-	s.logger.Debug("Unsubscribe track request",
+	s.logger.Info("Unsubscribe track request",
 		zap.String("room_id", req.RoomId),
 		zap.String("producer_id", req.ProducerId))
 
@@ -184,6 +184,10 @@ func (s *Server) handleUnsubscribeTrack(stream pb.RecordingSfuBridge_ConnectServ
 			zap.Error(err))
 		return err
 	}
+
+	s.logger.Info("Track unsubscribed successfully",
+		zap.String("room_id", req.RoomId),
+		zap.String("producer_id", req.ProducerId))
 
 	return nil
 }
@@ -219,19 +223,28 @@ func (s *Server) handleRoomEvent(event *pb.RoomEvent) error {
 		)
 
 	case *pb.RoomEvent_ProducerClosed:
-		s.logger.Debug("Producer closed event",
+		s.logger.Info("Producer closed event",
 			zap.String("room_id", event.RoomId),
-			zap.String("producer_id", e.ProducerClosed.ProducerId))
-		return s.manager.RemoveTrack(event.RoomId, e.ProducerClosed.ProducerId)
+			zap.String("producer_id", e.ProducerClosed.ProducerId),
+			zap.String("peer_id", e.ProducerClosed.PeerId))
+		err := s.manager.RemoveTrack(event.RoomId, e.ProducerClosed.ProducerId)
+		if err != nil {
+			s.logger.Error("Failed to remove track on producer close",
+				zap.String("room_id", event.RoomId),
+				zap.String("producer_id", e.ProducerClosed.ProducerId),
+				zap.Error(err))
+		}
+		return err
 
 	case *pb.RoomEvent_PeerJoined:
-		s.logger.Debug("Peer joined event",
+		s.logger.Info("Peer joined event",
 			zap.String("room_id", event.RoomId),
-			zap.String("peer_id", e.PeerJoined.PeerId))
+			zap.String("peer_id", e.PeerJoined.PeerId),
+			zap.String("display_name", e.PeerJoined.DisplayName))
 		s.manager.AddParticipant(event.RoomId, e.PeerJoined.PeerId, e.PeerJoined.DisplayName)
 
 	case *pb.RoomEvent_PeerLeft:
-		s.logger.Debug("Peer left event",
+		s.logger.Info("Peer left event",
 			zap.String("room_id", event.RoomId),
 			zap.String("peer_id", e.PeerLeft.PeerId))
 		s.manager.RemoveParticipant(event.RoomId, e.PeerLeft.PeerId)
@@ -240,14 +253,16 @@ func (s *Server) handleRoomEvent(event *pb.RoomEvent) error {
 		s.manager.SetActiveSpeaker(event.RoomId, e.ActiveSpeaker.PeerId)
 
 	case *pb.RoomEvent_ProducerPaused:
-		s.logger.Debug("Producer paused event",
+		s.logger.Info("Producer paused event",
 			zap.String("room_id", event.RoomId),
-			zap.String("producer_id", e.ProducerPaused.ProducerId))
+			zap.String("producer_id", e.ProducerPaused.ProducerId),
+			zap.String("peer_id", e.ProducerPaused.PeerId))
 
 	case *pb.RoomEvent_ProducerResumed:
-		s.logger.Debug("Producer resumed event",
+		s.logger.Info("Producer resumed event",
 			zap.String("room_id", event.RoomId),
-			zap.String("producer_id", e.ProducerResumed.ProducerId))
+			zap.String("producer_id", e.ProducerResumed.ProducerId),
+			zap.String("peer_id", e.ProducerResumed.PeerId))
 
 	default:
 		s.logger.Warn("Unknown room event type")
