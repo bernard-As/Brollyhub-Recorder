@@ -41,6 +41,8 @@ type RecordingConfig struct {
 	FlushInterval     time.Duration `yaml:"flush_interval"`
 	MaxTracksPerRoom  int           `yaml:"max_tracks_per_room"`
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
+	SegmentDuration   time.Duration `yaml:"segment_duration"`
+	SegmentMaxBytes   int64         `yaml:"segment_max_bytes"`
 }
 
 // LoggingConfig holds logging configuration
@@ -101,6 +103,8 @@ func (c *Config) setDefaults() {
 		FlushInterval:     time.Second,
 		MaxTracksPerRoom:  50,
 		HeartbeatInterval: 10 * time.Second,
+		SegmentDuration:   7 * time.Minute,
+		SegmentMaxBytes:   70 * 1024 * 1024, // 70MB
 	}
 
 	c.Logging = LoggingConfig{
@@ -145,6 +149,19 @@ func (c *Config) applyEnvOverrides() {
 	// Logging
 	if v := os.Getenv("RECORDING_LOG_LEVEL"); v != "" {
 		c.Logging.Level = v
+	}
+
+	// Recording
+	if v := os.Getenv("RECORDING_SEGMENT_DURATION"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			c.Recording.SegmentDuration = d
+		}
+	}
+	if v := os.Getenv("RECORDING_SEGMENT_MAX_BYTES"); v != "" {
+		var bytes int64
+		if _, err := fmt.Sscanf(v, "%d", &bytes); err == nil {
+			c.Recording.SegmentMaxBytes = bytes
+		}
 	}
 }
 

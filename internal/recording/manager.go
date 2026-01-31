@@ -18,6 +18,8 @@ type Manager struct {
 	logger        *zap.Logger
 	bufferSize    int
 	flushInterval time.Duration
+	segmentDuration time.Duration
+	segmentMaxBytes int64
 }
 
 // ManagerConfig holds configuration for the recording manager
@@ -26,6 +28,8 @@ type ManagerConfig struct {
 	Logger        *zap.Logger
 	BufferSize    int
 	FlushInterval time.Duration
+	SegmentDuration time.Duration
+	SegmentMaxBytes int64
 }
 
 // NewManager creates a new recording manager
@@ -36,6 +40,8 @@ func NewManager(cfg ManagerConfig) *Manager {
 		logger:        cfg.Logger,
 		bufferSize:    cfg.BufferSize,
 		flushInterval: cfg.FlushInterval,
+		segmentDuration: cfg.SegmentDuration,
+		segmentMaxBytes: cfg.SegmentMaxBytes,
 	}
 }
 
@@ -58,6 +64,8 @@ func (m *Manager) StartRecording(roomID, requestedBy string, policy *Policy) (*R
 		Logger:        m.logger.With(zap.String("room_id", roomID)),
 		BufferSize:    m.bufferSize,
 		FlushInterval: m.flushInterval,
+		SegmentDuration: m.segmentDuration,
+		SegmentMaxBytes: m.segmentMaxBytes,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create room recording: %w", err)

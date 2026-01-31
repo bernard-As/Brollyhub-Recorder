@@ -67,6 +67,8 @@ SFU (MediaSoup)                          Recording Service (Go)
 | `RECORDING_S3_SECRET_KEY` | minioadmin123 | MinIO secret key |
 | `RECORDING_S3_USE_SSL` | false | Use HTTPS for MinIO |
 | `RECORDING_LOG_LEVEL` | info | Log level (debug/info/warn/error) |
+| `RECORDING_SEGMENT_DURATION` | 7m | Track segment duration (e.g., `7m`) |
+| `RECORDING_SEGMENT_MAX_BYTES` | 73400320 | Max bytes per track segment |
 
 ### config.yaml
 
@@ -88,6 +90,8 @@ recording:
   buffer_size: 65536
   flush_interval: 1s
   max_tracks_per_room: 50
+  segment_duration: 7m
+  segment_max_bytes: 73400320
 ```
 
 ## Storage Structure
@@ -101,9 +105,10 @@ recordings-private/
     ├── timeline.json       # Events for sync
     ├── policy.json         # Policy snapshot (see below)
     └── tracks/
-        ├── {peer_id}-audio.rtp
-        ├── {peer_id}-video.rtp
-        └── {peer_id}-screenshare.rtp
+        ├── {peer_id}-audio-000001.rtp
+        ├── {peer_id}-video-000001.rtp
+        ├── {peer_id}-screenshare-000001.rtp
+        └── {peer_id}-audio-000002.rtp  # rotated segments
 ```
 
 ### policy.json Structure
@@ -206,7 +211,24 @@ Huddle Backend          SFU (Room.js)           Recording Service (Go)
 
 ### Auto-Recording
 
-When `auto_record` is enabled, the SFU will automatically start recording when the first participant creates a producer (audio/video) that matches the track type filters (`record_audio`, `record_video`, `record_screenshare`).
+When `auto_record` is enabled, the SFU will automatically start recording when the first matching producer is created (audio/video/screenshare) and passes the track type filters (`record_audio`, `record_video`, `record_screenshare`). This applies to regular peers, broadcasters, and AI producers.
+
+### Disconnect / Restart Behavior
+
+- **Recording Service disconnect**: Active recordings are finalized immediately on the Recording Service side. The SFU clears local recording state and notifies peers that recording has stopped.
+- **SFU reconnect**: The SFU re-evaluates auto-record for all rooms. If policy permits and a matching producer exists, a new recording session starts with a new `recording_id`.
+- **Room continuity**: Recordings are per-SFU session. A failover or SFU restart produces multiple recordings for the same room timeline (one per SFU session).
+
+### Track Stop Behavior
+
+- When a producer stops, the SFU unsubscribes the track and sends a `producerClosed` event.
+- The Recording Service finalizes the track data (writes the `.rtp` file) and removes the track from the active recording. Data is not deleted.
+
+### Track Segmentation (Long Recordings)
+
+- Tracks are written as segmented files to avoid unbounded memory growth.
+- Default rotation: every 7 minutes or 70 MB (whichever comes first).
+- Segment filenames follow: `{peer_id}-{track_type}-{segment_index}.rtp` (segment index is zero-padded).
 
 ## API Endpoints
 

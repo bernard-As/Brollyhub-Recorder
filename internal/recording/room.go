@@ -29,6 +29,8 @@ type RoomRecording struct {
 	logger        *zap.Logger
 	bufferSize    int
 	flushInterval time.Duration
+	segmentDuration time.Duration
+	segmentMaxBytes int64
 }
 
 // RecordingStatus represents the current status of a recording
@@ -88,6 +90,8 @@ type RoomRecordingConfig struct {
 	Logger        *zap.Logger
 	BufferSize    int
 	FlushInterval time.Duration
+	SegmentDuration time.Duration
+	SegmentMaxBytes int64
 }
 
 // NewRoomRecording creates a new room recording session
@@ -121,6 +125,8 @@ func NewRoomRecording(cfg RoomRecordingConfig) (*RoomRecording, error) {
 		logger:        cfg.Logger,
 		bufferSize:    cfg.BufferSize,
 		flushInterval: cfg.FlushInterval,
+		segmentDuration: cfg.SegmentDuration,
+		segmentMaxBytes: cfg.SegmentMaxBytes,
 	}
 
 	// Write initial policy snapshot
@@ -206,7 +212,11 @@ func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, 
 		PayloadType:   payloadType,
 		BufferSize:    r.bufferSize,
 		FlushInterval: r.flushInterval,
-		Writer:        &discardWriter{}, // Will be replaced with actual storage writer
+		Storage:       r.storage,
+		RoomID:        r.roomID,
+		RecordingID:   r.recordingID,
+		SegmentDuration: r.segmentDuration,
+		SegmentMaxBytes: r.segmentMaxBytes,
 		Logger:        r.logger,
 	})
 	if err != nil {
@@ -247,26 +257,15 @@ func (r *RoomRecording) RemoveTrack(producerID string) error {
 	}
 
 	// Close the track and get the data
-	data, err := track.Close()
+	stats, err := track.Close()
 	if err != nil {
 		r.logger.Warn("Failed to close track writer",
 			zap.String("producer_id", producerID),
 			zap.Error(err))
 	}
 
-	// Write track data to storage
-	if len(data) > 0 {
-		trackID := track.FileName()
-		if err := r.storage.WriteTrackData(r.storageCtx, r.roomID, r.recordingID, trackID, data); err != nil {
-			r.logger.Error("Failed to write track data to storage",
-				zap.String("producer_id", producerID),
-				zap.Error(err))
-		}
-	}
-
 	delete(r.tracks, producerID)
 
-	stats := track.Stats()
 	r.addTimelineEvent("track_removed", map[string]interface{}{
 		"producer_id":  producerID,
 		"peer_id":      stats.PeerID,
@@ -365,17 +364,10 @@ func (r *RoomRecording) Stop(stoppedBy string) error {
 	// Close all tracks
 	r.mu.Lock()
 	for producerID, track := range r.tracks {
-		data, err := track.Close()
+		_, err := track.Close()
 		if err != nil {
 			r.logger.Warn("Failed to close track", zap.String("producer_id", producerID), zap.Error(err))
 			continue
-		}
-
-		if len(data) > 0 {
-			trackID := track.FileName()
-			if err := r.storage.WriteTrackData(r.storageCtx, r.roomID, r.recordingID, trackID, data); err != nil {
-				r.logger.Error("Failed to write track data", zap.String("producer_id", producerID), zap.Error(err))
-			}
 		}
 	}
 	r.tracks = make(map[string]*TrackWriter)
@@ -489,6 +481,22 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 	tracks := make([]storage.TrackInfo, 0)
 	for _, t := range r.tracks {
 		info := t.TrackInfo()
+		segmentInfos := make([]storage.TrackSegmentInfo, 0, len(info.Segments))
+		for _, segment := range info.Segments {
+			segmentInfos = append(segmentInfos, storage.TrackSegmentInfo{
+				FileName:    segment.FileName,
+				StartTime:   segment.StartTime,
+				EndTime:     segment.EndTime,
+				Bytes:       segment.Bytes,
+				PacketCount: segment.PacketCount,
+			})
+		}
+
+		fileName := ""
+		if len(segmentInfos) > 0 {
+			fileName = segmentInfos[0].FileName
+		}
+
 		tracks = append(tracks, storage.TrackInfo{
 			TrackID:     info.TrackID,
 			ProducerID:  info.ProducerID,
@@ -498,7 +506,8 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 			SSRC:        info.SSRC,
 			PayloadType: info.PayloadType,
 			StartTime:   info.StartTime,
-			FileName:    t.FileName() + ".rtp",
+			FileName:    fileName,
+			Segments:    segmentInfos,
 		})
 	}
 
@@ -541,11 +550,4 @@ func (r *RoomRecording) writeTimeline() error {
 	}
 
 	return r.storage.WriteTimeline(r.storageCtx, r.roomID, r.recordingID, timeline)
-}
-
-// discardWriter is a no-op writer for initial buffer
-type discardWriter struct{}
-
-func (d *discardWriter) Write(p []byte) (n int, err error) {
-	return len(p), nil
 }

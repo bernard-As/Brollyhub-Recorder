@@ -73,6 +73,8 @@ func main() {
 		Logger:        logger,
 		BufferSize:    cfg.Recording.BufferSize,
 		FlushInterval: cfg.Recording.FlushInterval,
+		SegmentDuration: cfg.Recording.SegmentDuration,
+		SegmentMaxBytes: cfg.Recording.SegmentMaxBytes,
 	})
 
 	// Setup gRPC server

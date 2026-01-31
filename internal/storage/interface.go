@@ -70,6 +70,16 @@ type TrackInfo struct {
 	StartTime   time.Time  `json:"start_time"`
 	EndTime     *time.Time `json:"end_time,omitempty"`
 	FileName    string     `json:"file_name"`
+	Segments    []TrackSegmentInfo `json:"segments,omitempty"`
+}
+
+// TrackSegmentInfo contains information about a single track segment.
+type TrackSegmentInfo struct {
+	FileName    string     `json:"file_name"`
+	StartTime   time.Time  `json:"start_time"`
+	EndTime     *time.Time `json:"end_time,omitempty"`
+	Bytes       int64      `json:"bytes"`
+	PacketCount int64      `json:"packet_count"`
 }
 
 // RecordingStats contains recording statistics
