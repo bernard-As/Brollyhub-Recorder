@@ -21,6 +21,7 @@ type RoomRecording struct {
 	requestedBy   string
 	status        RecordingStatus
 	tracks        map[string]*TrackWriter // keyed by producerID
+	completedTracks []TrackInfo
 	participants  map[string]*Participant
 	timeline      *Timeline
 	storage       storage.Storage
@@ -117,6 +118,7 @@ func NewRoomRecording(cfg RoomRecordingConfig) (*RoomRecording, error) {
 		requestedBy:   cfg.RequestedBy,
 		status:        StatusRecording,
 		tracks:        make(map[string]*TrackWriter),
+		completedTracks: make([]TrackInfo, 0),
 		participants:  make(map[string]*Participant),
 		timeline:      &Timeline{Events: []TimelineEvent{}},
 		storage:       cfg.Storage,
@@ -263,8 +265,10 @@ func (r *RoomRecording) RemoveTrack(producerID string) error {
 			zap.String("producer_id", producerID),
 			zap.Error(err))
 	}
+	trackInfo := track.TrackInfo()
 
 	delete(r.tracks, producerID)
+	r.completedTracks = append(r.completedTracks, trackInfo)
 
 	r.addTimelineEvent("track_removed", map[string]interface{}{
 		"producer_id":  producerID,
@@ -369,6 +373,7 @@ func (r *RoomRecording) Stop(stoppedBy string) error {
 			r.logger.Warn("Failed to close track", zap.String("producer_id", producerID), zap.Error(err))
 			continue
 		}
+		r.completedTracks = append(r.completedTracks, track.TrackInfo())
 	}
 	r.tracks = make(map[string]*TrackWriter)
 	r.mu.Unlock()
@@ -414,13 +419,18 @@ func (r *RoomRecording) Stats() RecordingStats {
 		stats := track.Stats()
 		totalBytes += stats.TotalBytes
 	}
+	for _, track := range r.completedTracks {
+		for _, segment := range track.Segments {
+			totalBytes += segment.Bytes
+		}
+	}
 
 	return RecordingStats{
 		RecordingID: r.recordingID,
 		RoomID:      r.roomID,
 		StartTime:   r.startTime,
 		Duration:    time.Since(r.startTime),
-		TrackCount:  len(r.tracks),
+		TrackCount:  len(r.tracks) + len(r.completedTracks),
 		PeerCount:   len(r.participants),
 		TotalBytes:  totalBytes,
 		Status:      r.status,
@@ -479,8 +489,7 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 	}
 
 	tracks := make([]storage.TrackInfo, 0)
-	for _, t := range r.tracks {
-		info := t.TrackInfo()
+	appendTrack := func(info TrackInfo) {
 		segmentInfos := make([]storage.TrackSegmentInfo, 0, len(info.Segments))
 		for _, segment := range info.Segments {
 			segmentInfos = append(segmentInfos, storage.TrackSegmentInfo{
@@ -509,6 +518,13 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 			FileName:    fileName,
 			Segments:    segmentInfos,
 		})
+	}
+
+	for _, t := range r.tracks {
+		appendTrack(t.TrackInfo())
+	}
+	for _, info := range r.completedTracks {
+		appendTrack(info)
 	}
 
 	stats := r.Stats()
