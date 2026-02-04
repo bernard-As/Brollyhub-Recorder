@@ -1,0 +1,66 @@
+# =============================================================================
+# Recording Service TEST Environment - docker-compose.test.yml (STANDALONE)
+# =============================================================================
+# Usage: docker compose -f docker-compose.test.yml up --build -d
+#
+# Standalone test deployment connecting to brollyhub-test network.
+# References test container names (shelves-test-grpc, minio on test network).
+# =============================================================================
+
+services:
+  recording-service:
+    build: .
+    container_name: recording-test-service
+    ports:
+      - "50075:50075"  # gRPC
+      - "50076:50076"  # Health check
+    volumes:
+      - ./config.test.yaml:/service/config.yaml:ro
+    environment:
+      - RECORDING_GRPC_HOST=0.0.0.0
+      - RECORDING_GRPC_PORT=50075
+      - RECORDING_SHELVES_GRPC_HOST=shelves-test-grpc
+      - RECORDING_SHELVES_GRPC_PORT=50070
+      - RECORDING_SHELVES_GRPC_TIMEOUT=5s
+      - RECORDING_SHELVES_GRPC_ENABLED=true
+      - RECORDING_S3_ENDPOINT=brollyhub-test-minio:9100
+      - RECORDING_S3_BUCKET=recordings-private
+      - RECORDING_S3_ACCESS_KEY=minioadmin
+      - RECORDING_S3_SECRET_KEY=minioadmin123
+      - RECORDING_S3_USE_SSL=false
+      - RECORDING_S3_REGION=us-east-1
+      - RECORDING_LOG_LEVEL=info
+    networks:
+      - brollyhub-test_brollyhub_network
+    depends_on:
+      - recording-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:50076/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  recording-redis:
+    image: redis:7-alpine
+    container_name: recording-test-redis
+    ports:
+      - "127.0.0.1:6382:6379"
+    networks:
+      - brollyhub-test_brollyhub_network
+    volumes:
+      - recording-test-redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  brollyhub-test_brollyhub_network:
+    external: true
+
+volumes:
+  recording-test-redis-data:
