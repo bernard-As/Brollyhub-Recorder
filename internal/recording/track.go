@@ -32,6 +32,7 @@ type TrackWriter struct {
 	segments    []TrackSegmentInfo
 	startTime   time.Time
 	lastPacket  time.Time
+	endTime     *time.Time
 	packetCount int64
 	totalBytes  int64
 
@@ -139,6 +140,11 @@ func (t *TrackWriter) Flush() error {
 
 // Close closes the track writer and returns the buffered data
 func (t *TrackWriter) Close() (TrackStats, error) {
+	return t.CloseAt(time.Time{})
+}
+
+// CloseAt closes the track writer using a specific end time (or now if zero).
+func (t *TrackWriter) CloseAt(endTime time.Time) (TrackStats, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -148,8 +154,15 @@ func (t *TrackWriter) Close() (TrackStats, error) {
 
 	t.closed = true
 
-	if err := t.closeSegment(); err != nil {
+	if err := t.closeSegmentAt(endTime); err != nil {
 		return TrackStats{}, err
+	}
+
+	if endTime.IsZero() {
+		now := time.Now()
+		t.endTime = &now
+	} else {
+		t.endTime = &endTime
 	}
 
 	return t.statsLocked(), nil
@@ -197,6 +210,7 @@ func (t *TrackWriter) TrackInfo() TrackInfo {
 		SSRC:        t.ssrc,
 		PayloadType: t.payloadType,
 		StartTime:   t.startTime,
+		EndTime:     t.endTime,
 		Segments:    segments,
 	}
 }
@@ -297,6 +311,10 @@ func (t *TrackWriter) startNewSegment(now time.Time) error {
 }
 
 func (t *TrackWriter) closeSegment() error {
+	return t.closeSegmentAt(time.Time{})
+}
+
+func (t *TrackWriter) closeSegmentAt(endTime time.Time) error {
 	if t.rtpWriter == nil || t.segmentWriter == nil {
 		return nil
 	}
@@ -309,7 +327,9 @@ func (t *TrackWriter) closeSegment() error {
 		return fmt.Errorf("failed to close segment writer: %w", err)
 	}
 
-	endTime := time.Now()
+	if endTime.IsZero() {
+		endTime = time.Now()
+	}
 	lastIndex := len(t.segments) - 1
 	if lastIndex >= 0 {
 		if cw, ok := t.segmentWriter.(*countingWriteCloser); ok {

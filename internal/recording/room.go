@@ -180,7 +180,7 @@ func (r *RoomRecording) StartTime() time.Time {
 }
 
 // AddTrack adds a new track to the recording
-func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, payloadType uint8, trackType TrackType) error {
+func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, payloadType uint8, trackType TrackType, eventTime time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -189,19 +189,32 @@ func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, 
 	}
 
 	// Check if track type should be recorded
-	if !r.policy.ShouldRecordTrack(trackType) {
-		r.logger.Debug("Track type not enabled for recording",
-			zap.String("producer_id", producerID),
-			zap.String("track_type", trackType.String()))
-		return nil
-	}
+	trackID := fmt.Sprintf("%s-%s-%s", peerID, trackType.String(), producerID)
+	shouldRecord := r.policy.ShouldRecordTrack(trackType)
 
 	// Check if track already exists
 	if _, exists := r.tracks[producerID]; exists {
 		return fmt.Errorf("track already exists: %s", producerID)
 	}
 
-	trackID := fmt.Sprintf("%s-%s", peerID, trackType.String())
+	r.addTimelineEventAt(eventTime, "track_added", map[string]interface{}{
+		"producer_id":  producerID,
+		"peer_id":      peerID,
+		"track_id":     trackID,
+		"track_type":   trackType.String(),
+		"codec":        codec,
+		"ssrc":         ssrc,
+		"payload_type": payloadType,
+		"recorded":     shouldRecord,
+	})
+
+	// Check if track type should be recorded
+	if !shouldRecord {
+		r.logger.Debug("Track type not enabled for recording",
+			zap.String("producer_id", producerID),
+			zap.String("track_type", trackType.String()))
+		return nil
+	}
 
 	// Create a buffer for the track
 	trackWriter, err := NewTrackWriter(TrackWriterConfig{
@@ -227,15 +240,6 @@ func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, 
 
 	r.tracks[producerID] = trackWriter
 
-	r.addTimelineEvent("track_added", map[string]interface{}{
-		"producer_id":  producerID,
-		"peer_id":      peerID,
-		"track_type":   trackType.String(),
-		"codec":        codec,
-		"ssrc":         ssrc,
-		"payload_type": payloadType,
-	})
-
 	r.logger.Info("Track added to recording",
 		zap.String("room_id", r.roomID),
 		zap.String("producer_id", producerID),
@@ -246,7 +250,7 @@ func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, 
 }
 
 // RemoveTrack removes a track from the recording
-func (r *RoomRecording) RemoveTrack(producerID string) error {
+func (r *RoomRecording) RemoveTrack(producerID, peerID string, trackType TrackType, eventTime time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -255,11 +259,19 @@ func (r *RoomRecording) RemoveTrack(producerID string) error {
 		r.logger.Warn("RemoveTrack called but track not found",
 			zap.String("room_id", r.roomID),
 			zap.String("producer_id", producerID))
+		trackID := fmt.Sprintf("%s-%s-%s", peerID, trackType.String(), producerID)
+		r.addTimelineEventAt(eventTime, "track_removed", map[string]interface{}{
+			"producer_id": producerID,
+			"peer_id":     peerID,
+			"track_id":    trackID,
+			"track_type":  trackType.String(),
+			"recorded":    false,
+		})
 		return nil
 	}
 
 	// Close the track and get the data
-	stats, err := track.Close()
+	stats, err := track.CloseAt(eventTime)
 	if err != nil {
 		r.logger.Warn("Failed to close track writer",
 			zap.String("producer_id", producerID),
@@ -270,13 +282,15 @@ func (r *RoomRecording) RemoveTrack(producerID string) error {
 	delete(r.tracks, producerID)
 	r.completedTracks = append(r.completedTracks, trackInfo)
 
-	r.addTimelineEvent("track_removed", map[string]interface{}{
+	r.addTimelineEventAt(eventTime, "track_removed", map[string]interface{}{
 		"producer_id":  producerID,
 		"peer_id":      stats.PeerID,
+		"track_id":     trackInfo.TrackID,
 		"track_type":   stats.TrackType.String(),
 		"packet_count": stats.PacketCount,
 		"total_bytes":  stats.TotalBytes,
 		"duration_ms":  stats.Duration.Milliseconds(),
+		"recorded":     true,
 	})
 
 	r.logger.Info("Track removed from recording",
@@ -307,45 +321,71 @@ func (r *RoomRecording) WritePacket(producerID string, data []byte, serverTimest
 }
 
 // AddParticipant adds a participant to the recording
-func (r *RoomRecording) AddParticipant(peerID, displayName string) {
+func (r *RoomRecording) AddParticipant(peerID, displayName string, eventTime time.Time) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	now := time.Now()
+	now := r.normalizeEventTime(eventTime)
 	r.participants[peerID] = &Participant{
 		PeerID:      peerID,
 		DisplayName: displayName,
 		JoinedAt:    now,
 	}
 
-	r.addTimelineEvent("peer_joined", map[string]interface{}{
+	r.addTimelineEventAt(eventTime, "peer_joined", map[string]interface{}{
 		"peer_id":      peerID,
 		"display_name": displayName,
 	})
 }
 
 // RemoveParticipant marks a participant as having left
-func (r *RoomRecording) RemoveParticipant(peerID string) {
+func (r *RoomRecording) RemoveParticipant(peerID string, eventTime time.Time) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if p, exists := r.participants[peerID]; exists {
-		now := time.Now()
+		now := r.normalizeEventTime(eventTime)
 		p.LeftAt = &now
 
-		r.addTimelineEvent("peer_left", map[string]interface{}{
+		r.addTimelineEventAt(eventTime, "peer_left", map[string]interface{}{
 			"peer_id": peerID,
 		})
 	}
 }
 
 // SetActiveSpeaker records an active speaker change
-func (r *RoomRecording) SetActiveSpeaker(peerID string) {
+func (r *RoomRecording) SetActiveSpeaker(peerID string, eventTime time.Time) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.addTimelineEvent("active_speaker", map[string]interface{}{
+	r.addTimelineEventAt(eventTime, "active_speaker", map[string]interface{}{
 		"peer_id": peerID,
+	})
+}
+
+// RecordProducerPaused records a producer paused event for timeline.
+func (r *RoomRecording) RecordProducerPaused(peerID, producerID string, trackType TrackType, eventTime time.Time) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.addTimelineEventAt(eventTime, "producer_paused", map[string]interface{}{
+		"producer_id": producerID,
+		"peer_id":     peerID,
+		"track_id":    fmt.Sprintf("%s-%s-%s", peerID, trackType.String(), producerID),
+		"track_type":  trackType.String(),
+	})
+}
+
+// RecordProducerResumed records a producer resumed event for timeline.
+func (r *RoomRecording) RecordProducerResumed(peerID, producerID string, trackType TrackType, eventTime time.Time) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.addTimelineEventAt(eventTime, "producer_resumed", map[string]interface{}{
+		"producer_id": producerID,
+		"peer_id":     peerID,
+		"track_id":    fmt.Sprintf("%s-%s-%s", peerID, trackType.String(), producerID),
+		"track_type":  trackType.String(),
 	})
 }
 
@@ -450,11 +490,22 @@ type RecordingStats struct {
 }
 
 func (r *RoomRecording) addTimelineEvent(eventType string, data map[string]interface{}) {
+	r.addTimelineEventAt(time.Time{}, eventType, data)
+}
+
+func (r *RoomRecording) addTimelineEventAt(eventTime time.Time, eventType string, data map[string]interface{}) {
 	r.timeline.Events = append(r.timeline.Events, TimelineEvent{
-		Timestamp: time.Now(),
+		Timestamp: r.normalizeEventTime(eventTime),
 		Type:      eventType,
 		Data:      data,
 	})
+}
+
+func (r *RoomRecording) normalizeEventTime(eventTime time.Time) time.Time {
+	if !eventTime.IsZero() {
+		return eventTime
+	}
+	return time.Now()
 }
 
 func (r *RoomRecording) writePolicySnapshot() error {
@@ -515,6 +566,7 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 			SSRC:        info.SSRC,
 			PayloadType: info.PayloadType,
 			StartTime:   info.StartTime,
+			EndTime:     info.EndTime,
 			FileName:    fileName,
 			Segments:    segmentInfos,
 		})

@@ -909,6 +909,7 @@ type SubscribeTrackRequest struct {
 	Codec         string                 `protobuf:"bytes,6,opt,name=codec,proto3" json:"codec,omitempty"`
 	PayloadType   uint32                 `protobuf:"varint,7,opt,name=payload_type,json=payloadType,proto3" json:"payload_type,omitempty"`
 	Ssrc          uint32                 `protobuf:"varint,8,opt,name=ssrc,proto3" json:"ssrc,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,9,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // Unix timestamp ms
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -999,11 +1000,21 @@ func (x *SubscribeTrackRequest) GetSsrc() uint32 {
 	return 0
 }
 
+func (x *SubscribeTrackRequest) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
 type UnsubscribeTrackRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
 	RecordingId   string                 `protobuf:"bytes,2,opt,name=recording_id,json=recordingId,proto3" json:"recording_id,omitempty"`
 	ProducerId    string                 `protobuf:"bytes,3,opt,name=producer_id,json=producerId,proto3" json:"producer_id,omitempty"`
+	PeerId        string                 `protobuf:"bytes,4,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	TrackType     TrackType              `protobuf:"varint,5,opt,name=track_type,json=trackType,proto3,enum=recording.TrackType" json:"track_type,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // Unix timestamp ms
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1057,6 +1068,27 @@ func (x *UnsubscribeTrackRequest) GetProducerId() string {
 		return x.ProducerId
 	}
 	return ""
+}
+
+func (x *UnsubscribeTrackRequest) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
+	}
+	return ""
+}
+
+func (x *UnsubscribeTrackRequest) GetTrackType() TrackType {
+	if x != nil {
+		return x.TrackType
+	}
+	return TrackType_TRACK_TYPE_UNSPECIFIED
+}
+
+func (x *UnsubscribeTrackRequest) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
 }
 
 type RtpPacket struct {
@@ -1485,6 +1517,7 @@ type ProducerPausedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProducerId    string                 `protobuf:"bytes,1,opt,name=producer_id,json=producerId,proto3" json:"producer_id,omitempty"`
 	PeerId        string                 `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	TrackType     TrackType              `protobuf:"varint,3,opt,name=track_type,json=trackType,proto3,enum=recording.TrackType" json:"track_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1533,10 +1566,18 @@ func (x *ProducerPausedEvent) GetPeerId() string {
 	return ""
 }
 
+func (x *ProducerPausedEvent) GetTrackType() TrackType {
+	if x != nil {
+		return x.TrackType
+	}
+	return TrackType_TRACK_TYPE_UNSPECIFIED
+}
+
 type ProducerResumedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProducerId    string                 `protobuf:"bytes,1,opt,name=producer_id,json=producerId,proto3" json:"producer_id,omitempty"`
 	PeerId        string                 `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	TrackType     TrackType              `protobuf:"varint,3,opt,name=track_type,json=trackType,proto3,enum=recording.TrackType" json:"track_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1583,6 +1624,13 @@ func (x *ProducerResumedEvent) GetPeerId() string {
 		return x.PeerId
 	}
 	return ""
+}
+
+func (x *ProducerResumedEvent) GetTrackType() TrackType {
+	if x != nil {
+		return x.TrackType
+	}
+	return TrackType_TRACK_TYPE_UNSPECIFIED
 }
 
 type PeerJoinedEvent struct {
@@ -2060,7 +2108,7 @@ const file_recording_sfu_proto_rawDesc = "" +
 	"\amessage\x18\x04 \x01(\tR\amessage\x12\x1d\n" +
 	"\n" +
 	"stopped_at\x18\x05 \x01(\x03R\tstoppedAt\x12/\n" +
-	"\x05stats\x18\x06 \x01(\v2\x19.recording.RecordingStatsR\x05stats\"\x8f\x02\n" +
+	"\x05stats\x18\x06 \x01(\v2\x19.recording.RecordingStatsR\x05stats\"\xad\x02\n" +
 	"\x15SubscribeTrackRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12!\n" +
 	"\frecording_id\x18\x02 \x01(\tR\vrecordingId\x12\x1f\n" +
@@ -2071,12 +2119,17 @@ const file_recording_sfu_proto_rawDesc = "" +
 	"track_type\x18\x05 \x01(\x0e2\x14.recording.TrackTypeR\ttrackType\x12\x14\n" +
 	"\x05codec\x18\x06 \x01(\tR\x05codec\x12!\n" +
 	"\fpayload_type\x18\a \x01(\rR\vpayloadType\x12\x12\n" +
-	"\x04ssrc\x18\b \x01(\rR\x04ssrc\"v\n" +
+	"\x04ssrc\x18\b \x01(\rR\x04ssrc\x12\x1c\n" +
+	"\ttimestamp\x18\t \x01(\x03R\ttimestamp\"\xe2\x01\n" +
 	"\x17UnsubscribeTrackRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12!\n" +
 	"\frecording_id\x18\x02 \x01(\tR\vrecordingId\x12\x1f\n" +
 	"\vproducer_id\x18\x03 \x01(\tR\n" +
-	"producerId\"\xce\x01\n" +
+	"producerId\x12\x17\n" +
+	"\apeer_id\x18\x04 \x01(\tR\x06peerId\x123\n" +
+	"\n" +
+	"track_type\x18\x05 \x01(\x0e2\x14.recording.TrackTypeR\ttrackType\x12\x1c\n" +
+	"\ttimestamp\x18\x06 \x01(\x03R\ttimestamp\"\xce\x01\n" +
 	"\tRtpPacket\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12\x1f\n" +
 	"\vproducer_id\x18\x02 \x01(\tR\n" +
@@ -2114,15 +2167,19 @@ const file_recording_sfu_proto_rawDesc = "" +
 	"producerId\x12\x17\n" +
 	"\apeer_id\x18\x02 \x01(\tR\x06peerId\x123\n" +
 	"\n" +
-	"track_type\x18\x03 \x01(\x0e2\x14.recording.TrackTypeR\ttrackType\"O\n" +
+	"track_type\x18\x03 \x01(\x0e2\x14.recording.TrackTypeR\ttrackType\"\x84\x01\n" +
 	"\x13ProducerPausedEvent\x12\x1f\n" +
 	"\vproducer_id\x18\x01 \x01(\tR\n" +
 	"producerId\x12\x17\n" +
-	"\apeer_id\x18\x02 \x01(\tR\x06peerId\"P\n" +
+	"\apeer_id\x18\x02 \x01(\tR\x06peerId\x123\n" +
+	"\n" +
+	"track_type\x18\x03 \x01(\x0e2\x14.recording.TrackTypeR\ttrackType\"\x85\x01\n" +
 	"\x14ProducerResumedEvent\x12\x1f\n" +
 	"\vproducer_id\x18\x01 \x01(\tR\n" +
 	"producerId\x12\x17\n" +
-	"\apeer_id\x18\x02 \x01(\tR\x06peerId\"M\n" +
+	"\apeer_id\x18\x02 \x01(\tR\x06peerId\x123\n" +
+	"\n" +
+	"track_type\x18\x03 \x01(\x0e2\x14.recording.TrackTypeR\ttrackType\"M\n" +
 	"\x0fPeerJoinedEvent\x12\x17\n" +
 	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\"(\n" +
@@ -2236,24 +2293,27 @@ var file_recording_sfu_proto_depIdxs = []int32{
 	22, // 13: recording.StartRecordingRequest.policy:type_name -> recording.RecordingPolicy
 	25, // 14: recording.StopRecordingResponse.stats:type_name -> recording.RecordingStats
 	2,  // 15: recording.SubscribeTrackRequest.track_type:type_name -> recording.TrackType
-	15, // 16: recording.RoomEvent.producer_created:type_name -> recording.ProducerCreatedEvent
-	16, // 17: recording.RoomEvent.producer_closed:type_name -> recording.ProducerClosedEvent
-	17, // 18: recording.RoomEvent.producer_paused:type_name -> recording.ProducerPausedEvent
-	18, // 19: recording.RoomEvent.producer_resumed:type_name -> recording.ProducerResumedEvent
-	19, // 20: recording.RoomEvent.peer_joined:type_name -> recording.PeerJoinedEvent
-	20, // 21: recording.RoomEvent.peer_left:type_name -> recording.PeerLeftEvent
-	21, // 22: recording.RoomEvent.active_speaker:type_name -> recording.ActiveSpeakerEvent
-	2,  // 23: recording.ProducerCreatedEvent.track_type:type_name -> recording.TrackType
-	2,  // 24: recording.ProducerClosedEvent.track_type:type_name -> recording.TrackType
-	0,  // 25: recording.RecordingPolicy.who_can_record:type_name -> recording.WhoCanRecord
-	1,  // 26: recording.RecordingPolicy.who_can_access_recordings:type_name -> recording.AccessLevel
-	4,  // 27: recording.RecordingSfuBridge.Connect:input_type -> recording.SfuToRecording
-	3,  // 28: recording.RecordingSfuBridge.Connect:output_type -> recording.RecordingToSfu
-	28, // [28:29] is the sub-list for method output_type
-	27, // [27:28] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	2,  // 16: recording.UnsubscribeTrackRequest.track_type:type_name -> recording.TrackType
+	15, // 17: recording.RoomEvent.producer_created:type_name -> recording.ProducerCreatedEvent
+	16, // 18: recording.RoomEvent.producer_closed:type_name -> recording.ProducerClosedEvent
+	17, // 19: recording.RoomEvent.producer_paused:type_name -> recording.ProducerPausedEvent
+	18, // 20: recording.RoomEvent.producer_resumed:type_name -> recording.ProducerResumedEvent
+	19, // 21: recording.RoomEvent.peer_joined:type_name -> recording.PeerJoinedEvent
+	20, // 22: recording.RoomEvent.peer_left:type_name -> recording.PeerLeftEvent
+	21, // 23: recording.RoomEvent.active_speaker:type_name -> recording.ActiveSpeakerEvent
+	2,  // 24: recording.ProducerCreatedEvent.track_type:type_name -> recording.TrackType
+	2,  // 25: recording.ProducerClosedEvent.track_type:type_name -> recording.TrackType
+	2,  // 26: recording.ProducerPausedEvent.track_type:type_name -> recording.TrackType
+	2,  // 27: recording.ProducerResumedEvent.track_type:type_name -> recording.TrackType
+	0,  // 28: recording.RecordingPolicy.who_can_record:type_name -> recording.WhoCanRecord
+	1,  // 29: recording.RecordingPolicy.who_can_access_recordings:type_name -> recording.AccessLevel
+	4,  // 30: recording.RecordingSfuBridge.Connect:input_type -> recording.SfuToRecording
+	3,  // 31: recording.RecordingSfuBridge.Connect:output_type -> recording.RecordingToSfu
+	31, // [31:32] is the sub-list for method output_type
+	30, // [30:31] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_recording_sfu_proto_init() }

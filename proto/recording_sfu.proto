@@ -123,12 +123,16 @@ message SubscribeTrackRequest {
   string codec = 6;
   uint32 payload_type = 7;
   uint32 ssrc = 8;
+  int64 timestamp = 9;  // Unix timestamp ms
 }
 
 message UnsubscribeTrackRequest {
   string room_id = 1;
   string recording_id = 2;
   string producer_id = 3;
+  string peer_id = 4;
+  TrackType track_type = 5;
+  int64 timestamp = 6;  // Unix timestamp ms
 }
 
 // =============================================================================
@@ -183,11 +187,13 @@ message ProducerClosedEvent {
 message ProducerPausedEvent {
   string producer_id = 1;
   string peer_id = 2;
+  TrackType track_type = 3;
 }
 
 message ProducerResumedEvent {
   string producer_id = 1;
   string peer_id = 2;
+  TrackType track_type = 3;
 }
 
 message PeerJoinedEvent {

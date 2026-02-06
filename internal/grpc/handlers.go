@@ -173,6 +173,7 @@ func (s *Server) handleSubscribeTrack(stream pb.RecordingSfuBridge_ConnectServer
 		zap.String("track_type", req.TrackType.String()))
 
 	trackType := recording.TrackTypeFromProto(req.TrackType)
+	eventTime := timestampMsToTime(req.Timestamp)
 
 	err := s.manager.AddTrack(
 		req.RoomId,
@@ -182,6 +183,7 @@ func (s *Server) handleSubscribeTrack(stream pb.RecordingSfuBridge_ConnectServer
 		req.Ssrc,
 		uint8(req.PayloadType),
 		trackType,
+		eventTime,
 	)
 	if err != nil {
 		s.logger.Error("Failed to subscribe track",
@@ -200,7 +202,9 @@ func (s *Server) handleUnsubscribeTrack(stream pb.RecordingSfuBridge_ConnectServ
 		zap.String("room_id", req.RoomId),
 		zap.String("producer_id", req.ProducerId))
 
-	err := s.manager.RemoveTrack(req.RoomId, req.ProducerId)
+	trackType := recording.TrackTypeFromProto(req.TrackType)
+	eventTime := timestampMsToTime(req.Timestamp)
+	err := s.manager.RemoveTrack(req.RoomId, req.ProducerId, req.PeerId, trackType, eventTime)
 	if err != nil {
 		s.logger.Error("Failed to unsubscribe track",
 			zap.String("room_id", req.RoomId),
@@ -229,22 +233,13 @@ func (s *Server) handleRtpPacket(pkt *pb.RtpPacket) error {
 
 // handleRoomEvent handles room events for timeline tracking
 func (s *Server) handleRoomEvent(event *pb.RoomEvent) error {
+	eventTime := timestampMsToTime(event.Timestamp)
 	switch e := event.Event.(type) {
 	case *pb.RoomEvent_ProducerCreated:
 		s.logger.Debug("Producer created event",
 			zap.String("room_id", event.RoomId),
 			zap.String("producer_id", e.ProducerCreated.ProducerId))
-
-		trackType := recording.TrackTypeFromProto(e.ProducerCreated.TrackType)
-		return s.manager.AddTrack(
-			event.RoomId,
-			e.ProducerCreated.ProducerId,
-			e.ProducerCreated.PeerId,
-			e.ProducerCreated.Codec,
-			e.ProducerCreated.Ssrc,
-			uint8(e.ProducerCreated.PayloadType),
-			trackType,
-		)
+		return nil
 
 	case *pb.RoomEvent_ProducerClosed:
 		s.logger.Info("Producer closed event",
@@ -255,13 +250,14 @@ func (s *Server) handleRoomEvent(event *pb.RoomEvent) error {
 			return nil
 		}
 
-		if !s.manager.HasTrack(event.RoomId, e.ProducerClosed.ProducerId) {
+		if s.manager.HasTrack(event.RoomId, e.ProducerClosed.ProducerId) {
 			return nil
 		}
 
-		err := s.manager.RemoveTrack(event.RoomId, e.ProducerClosed.ProducerId)
+		trackType := recording.TrackTypeFromProto(e.ProducerClosed.TrackType)
+		err := s.manager.RemoveTrack(event.RoomId, e.ProducerClosed.ProducerId, e.ProducerClosed.PeerId, trackType, eventTime)
 		if err != nil {
-			s.logger.Error("Failed to remove track on producer close",
+			s.logger.Error("Failed to record producer close",
 				zap.String("room_id", event.RoomId),
 				zap.String("producer_id", e.ProducerClosed.ProducerId),
 				zap.Error(err))
@@ -273,28 +269,32 @@ func (s *Server) handleRoomEvent(event *pb.RoomEvent) error {
 			zap.String("room_id", event.RoomId),
 			zap.String("peer_id", e.PeerJoined.PeerId),
 			zap.String("display_name", e.PeerJoined.DisplayName))
-		s.manager.AddParticipant(event.RoomId, e.PeerJoined.PeerId, e.PeerJoined.DisplayName)
+		s.manager.AddParticipant(event.RoomId, e.PeerJoined.PeerId, e.PeerJoined.DisplayName, eventTime)
 
 	case *pb.RoomEvent_PeerLeft:
 		s.logger.Info("Peer left event",
 			zap.String("room_id", event.RoomId),
 			zap.String("peer_id", e.PeerLeft.PeerId))
-		s.manager.RemoveParticipant(event.RoomId, e.PeerLeft.PeerId)
+		s.manager.RemoveParticipant(event.RoomId, e.PeerLeft.PeerId, eventTime)
 
 	case *pb.RoomEvent_ActiveSpeaker:
-		s.manager.SetActiveSpeaker(event.RoomId, e.ActiveSpeaker.PeerId)
+		s.manager.SetActiveSpeaker(event.RoomId, e.ActiveSpeaker.PeerId, eventTime)
 
 	case *pb.RoomEvent_ProducerPaused:
 		s.logger.Info("Producer paused event",
 			zap.String("room_id", event.RoomId),
 			zap.String("producer_id", e.ProducerPaused.ProducerId),
 			zap.String("peer_id", e.ProducerPaused.PeerId))
+		trackType := recording.TrackTypeFromProto(e.ProducerPaused.TrackType)
+		s.manager.RecordProducerPaused(event.RoomId, e.ProducerPaused.PeerId, e.ProducerPaused.ProducerId, trackType, eventTime)
 
 	case *pb.RoomEvent_ProducerResumed:
 		s.logger.Info("Producer resumed event",
 			zap.String("room_id", event.RoomId),
 			zap.String("producer_id", e.ProducerResumed.ProducerId),
 			zap.String("peer_id", e.ProducerResumed.PeerId))
+		trackType := recording.TrackTypeFromProto(e.ProducerResumed.TrackType)
+		s.manager.RecordProducerResumed(event.RoomId, e.ProducerResumed.PeerId, e.ProducerResumed.ProducerId, trackType, eventTime)
 
 	default:
 		s.logger.Warn("Unknown room event type")
@@ -346,4 +346,11 @@ func (s *Server) notifyRoomRecording(roomID, recordingID string, status pb.Recor
 			s.logger.Warn("Failed to notify shelves", zap.Error(err))
 		}
 	}()
+}
+
+func timestampMsToTime(value int64) time.Time {
+	if value <= 0 {
+		return time.Time{}
+	}
+	return time.UnixMilli(value)
 }

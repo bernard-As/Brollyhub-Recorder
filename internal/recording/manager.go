@@ -133,17 +133,17 @@ func (m *Manager) HasTrack(roomID, producerID string) bool {
 }
 
 // AddTrack adds a track to a room's recording
-func (m *Manager) AddTrack(roomID, producerID, peerID, codec string, ssrc uint32, payloadType uint8, trackType TrackType) error {
+func (m *Manager) AddTrack(roomID, producerID, peerID, codec string, ssrc uint32, payloadType uint8, trackType TrackType, eventTime time.Time) error {
 	recording, exists := m.GetRecording(roomID)
 	if !exists {
 		return nil // No active recording, silently ignore
 	}
 
-	return recording.AddTrack(producerID, peerID, codec, ssrc, payloadType, trackType)
+	return recording.AddTrack(producerID, peerID, codec, ssrc, payloadType, trackType, eventTime)
 }
 
 // RemoveTrack removes a track from a room's recording
-func (m *Manager) RemoveTrack(roomID, producerID string) error {
+func (m *Manager) RemoveTrack(roomID, producerID, peerID string, trackType TrackType, eventTime time.Time) error {
 	recording, exists := m.GetRecording(roomID)
 	if !exists {
 		m.logger.Warn("RemoveTrack called but no active recording",
@@ -152,7 +152,7 @@ func (m *Manager) RemoveTrack(roomID, producerID string) error {
 		return nil
 	}
 
-	return recording.RemoveTrack(producerID)
+	return recording.RemoveTrack(producerID, peerID, trackType, eventTime)
 }
 
 // WritePacket writes an RTP packet to the appropriate track
@@ -166,33 +166,53 @@ func (m *Manager) WritePacket(roomID, producerID string, data []byte, serverTime
 }
 
 // AddParticipant adds a participant to a room's recording
-func (m *Manager) AddParticipant(roomID, peerID, displayName string) {
+func (m *Manager) AddParticipant(roomID, peerID, displayName string, eventTime time.Time) {
 	recording, exists := m.GetRecording(roomID)
 	if !exists {
 		return // No active recording, silently ignore
 	}
 
-	recording.AddParticipant(peerID, displayName)
+	recording.AddParticipant(peerID, displayName, eventTime)
 }
 
 // RemoveParticipant marks a participant as having left
-func (m *Manager) RemoveParticipant(roomID, peerID string) {
+func (m *Manager) RemoveParticipant(roomID, peerID string, eventTime time.Time) {
 	recording, exists := m.GetRecording(roomID)
 	if !exists {
 		return // No active recording, silently ignore
 	}
 
-	recording.RemoveParticipant(peerID)
+	recording.RemoveParticipant(peerID, eventTime)
 }
 
 // SetActiveSpeaker records an active speaker change
-func (m *Manager) SetActiveSpeaker(roomID, peerID string) {
+func (m *Manager) SetActiveSpeaker(roomID, peerID string, eventTime time.Time) {
 	recording, exists := m.GetRecording(roomID)
 	if !exists {
 		return // No active recording, silently ignore
 	}
 
-	recording.SetActiveSpeaker(peerID)
+	recording.SetActiveSpeaker(peerID, eventTime)
+}
+
+// RecordProducerPaused records a paused event for timeline.
+func (m *Manager) RecordProducerPaused(roomID, peerID, producerID string, trackType TrackType, eventTime time.Time) {
+	recording, exists := m.GetRecording(roomID)
+	if !exists {
+		return
+	}
+
+	recording.RecordProducerPaused(peerID, producerID, trackType, eventTime)
+}
+
+// RecordProducerResumed records a resumed event for timeline.
+func (m *Manager) RecordProducerResumed(roomID, peerID, producerID string, trackType TrackType, eventTime time.Time) {
+	recording, exists := m.GetRecording(roomID)
+	if !exists {
+		return
+	}
+
+	recording.RecordProducerResumed(peerID, producerID, trackType, eventTime)
 }
 
 // ActiveRecordings returns the number of active recordings
