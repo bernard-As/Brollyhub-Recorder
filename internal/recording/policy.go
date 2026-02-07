@@ -75,7 +75,7 @@ func PolicyFromProto(p *pb.RecordingPolicy) *Policy {
 		return DefaultPolicy()
 	}
 
-	return &Policy{
+	return (&Policy{
 		Enabled:                      p.Enabled,
 		WhoCanRecord:                 WhoCanRecord(p.WhoCanRecord),
 		AutoRecord:                   p.AutoRecord,
@@ -89,7 +89,7 @@ func PolicyFromProto(p *pb.RecordingPolicy) *Policy {
 		QuickAccessLayout:            RecordingLayout(p.QuickAccessLayout),
 		QuickAccessPartDurationSec:   p.QuickAccessPartDurationSec,
 		LateCompositePartDurationSec: p.LateCompositePartDurationSec,
-	}.withDefaults()
+	}).withDefaults()
 }
 
 func (p *Policy) withDefaults() *Policy {
@@ -126,7 +126,7 @@ func (p *Policy) ToProto() *pb.RecordingPolicy {
 
 // DefaultPolicy returns the default recording policy
 func DefaultPolicy() *Policy {
-	return &Policy{
+	return (&Policy{
 		Enabled:                      true,
 		WhoCanRecord:                 WhoCanRecordHostOnly,
 		AutoRecord:                   false,
@@ -138,7 +138,7 @@ func DefaultPolicy() *Policy {
 		QuickAccessLayout:            LayoutGrid,
 		QuickAccessPartDurationSec:   720,
 		LateCompositePartDurationSec: 720,
-	}.withDefaults()
+	}).withDefaults()
 }
 
 // RecordingLayout defines supported layout modes for quick access exports.
