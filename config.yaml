@@ -25,6 +25,14 @@ shelves:
   timeout: 5s
   enabled: true
 
+compositer:
+  host: "compositer"
+  port: 50085
+  timeout: 30s
+  enabled: true
+  service_key: "recording-service"
+  use_ssl: false
+
 logging:
   level: "info"
   format: "json"

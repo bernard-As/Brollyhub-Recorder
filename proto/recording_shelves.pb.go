@@ -74,18 +74,20 @@ func (RecordingStatus) EnumDescriptor() ([]byte, []int) {
 }
 
 type UpsertRoomRecordingRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
-	RecordingId   string                 `protobuf:"bytes,2,opt,name=recording_id,json=recordingId,proto3" json:"recording_id,omitempty"`
-	Status        RecordingStatus        `protobuf:"varint,3,opt,name=status,proto3,enum=shelves.recording.RecordingStatus" json:"status,omitempty"`
-	StartedAt     int64                  `protobuf:"varint,4,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
-	CompletedAt   int64                  `protobuf:"varint,5,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
-	S3Prefix      string                 `protobuf:"bytes,6,opt,name=s3_prefix,json=s3Prefix,proto3" json:"s3_prefix,omitempty"`
-	MetadataKey   string                 `protobuf:"bytes,7,opt,name=metadata_key,json=metadataKey,proto3" json:"metadata_key,omitempty"`
-	TimelineKey   string                 `protobuf:"bytes,8,opt,name=timeline_key,json=timelineKey,proto3" json:"timeline_key,omitempty"`
-	ServiceId     string                 `protobuf:"bytes,9,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	RoomId             string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	RecordingId        string                 `protobuf:"bytes,2,opt,name=recording_id,json=recordingId,proto3" json:"recording_id,omitempty"`
+	Status             RecordingStatus        `protobuf:"varint,3,opt,name=status,proto3,enum=shelves.recording.RecordingStatus" json:"status,omitempty"`
+	StartedAt          int64                  `protobuf:"varint,4,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt        int64                  `protobuf:"varint,5,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	S3Prefix           string                 `protobuf:"bytes,6,opt,name=s3_prefix,json=s3Prefix,proto3" json:"s3_prefix,omitempty"`
+	MetadataKey        string                 `protobuf:"bytes,7,opt,name=metadata_key,json=metadataKey,proto3" json:"metadata_key,omitempty"`
+	TimelineKey        string                 `protobuf:"bytes,8,opt,name=timeline_key,json=timelineKey,proto3" json:"timeline_key,omitempty"`
+	ServiceId          string                 `protobuf:"bytes,9,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
+	QuickAccessParts   []*RecordingPart       `protobuf:"bytes,10,rep,name=quick_access_parts,json=quickAccessParts,proto3" json:"quick_access_parts,omitempty"`
+	LateCompositeParts []*RecordingPart       `protobuf:"bytes,11,rep,name=late_composite_parts,json=lateCompositeParts,proto3" json:"late_composite_parts,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *UpsertRoomRecordingRequest) Reset() {
@@ -181,6 +183,104 @@ func (x *UpsertRoomRecordingRequest) GetServiceId() string {
 	return ""
 }
 
+func (x *UpsertRoomRecordingRequest) GetQuickAccessParts() []*RecordingPart {
+	if x != nil {
+		return x.QuickAccessParts
+	}
+	return nil
+}
+
+func (x *UpsertRoomRecordingRequest) GetLateCompositeParts() []*RecordingPart {
+	if x != nil {
+		return x.LateCompositeParts
+	}
+	return nil
+}
+
+type RecordingPart struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Index         int32                  `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	StartOffsetMs int64                  `protobuf:"varint,3,opt,name=start_offset_ms,json=startOffsetMs,proto3" json:"start_offset_ms,omitempty"`
+	EndOffsetMs   int64                  `protobuf:"varint,4,opt,name=end_offset_ms,json=endOffsetMs,proto3" json:"end_offset_ms,omitempty"`
+	DurationMs    int64                  `protobuf:"varint,5,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	Label         string                 `protobuf:"bytes,6,opt,name=label,proto3" json:"label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordingPart) Reset() {
+	*x = RecordingPart{}
+	mi := &file_recording_shelves_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordingPart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordingPart) ProtoMessage() {}
+
+func (x *RecordingPart) ProtoReflect() protoreflect.Message {
+	mi := &file_recording_shelves_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordingPart.ProtoReflect.Descriptor instead.
+func (*RecordingPart) Descriptor() ([]byte, []int) {
+	return file_recording_shelves_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RecordingPart) GetIndex() int32 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *RecordingPart) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *RecordingPart) GetStartOffsetMs() int64 {
+	if x != nil {
+		return x.StartOffsetMs
+	}
+	return 0
+}
+
+func (x *RecordingPart) GetEndOffsetMs() int64 {
+	if x != nil {
+		return x.EndOffsetMs
+	}
+	return 0
+}
+
+func (x *RecordingPart) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *RecordingPart) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
 type UpsertRoomRecordingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -193,7 +293,7 @@ type UpsertRoomRecordingResponse struct {
 
 func (x *UpsertRoomRecordingResponse) Reset() {
 	*x = UpsertRoomRecordingResponse{}
-	mi := &file_recording_shelves_proto_msgTypes[1]
+	mi := &file_recording_shelves_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -205,7 +305,7 @@ func (x *UpsertRoomRecordingResponse) String() string {
 func (*UpsertRoomRecordingResponse) ProtoMessage() {}
 
 func (x *UpsertRoomRecordingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_recording_shelves_proto_msgTypes[1]
+	mi := &file_recording_shelves_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -218,7 +318,7 @@ func (x *UpsertRoomRecordingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertRoomRecordingResponse.ProtoReflect.Descriptor instead.
 func (*UpsertRoomRecordingResponse) Descriptor() ([]byte, []int) {
-	return file_recording_shelves_proto_rawDescGZIP(), []int{1}
+	return file_recording_shelves_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UpsertRoomRecordingResponse) GetSuccess() bool {
@@ -253,7 +353,7 @@ var File_recording_shelves_proto protoreflect.FileDescriptor
 
 const file_recording_shelves_proto_rawDesc = "" +
 	"\n" +
-	"\x17recording_shelves.proto\x12\x11shelves.recording\"\xd8\x02\n" +
+	"\x17recording_shelves.proto\x12\x11shelves.recording\"\xfc\x03\n" +
 	"\x1aUpsertRoomRecordingRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12!\n" +
 	"\frecording_id\x18\x02 \x01(\tR\vrecordingId\x12:\n" +
@@ -265,7 +365,18 @@ const file_recording_shelves_proto_rawDesc = "" +
 	"\fmetadata_key\x18\a \x01(\tR\vmetadataKey\x12!\n" +
 	"\ftimeline_key\x18\b \x01(\tR\vtimelineKey\x12\x1d\n" +
 	"\n" +
-	"service_id\x18\t \x01(\tR\tserviceId\"\x8d\x01\n" +
+	"service_id\x18\t \x01(\tR\tserviceId\x12N\n" +
+	"\x12quick_access_parts\x18\n" +
+	" \x03(\v2 .shelves.recording.RecordingPartR\x10quickAccessParts\x12R\n" +
+	"\x14late_composite_parts\x18\v \x03(\v2 .shelves.recording.RecordingPartR\x12lateCompositeParts\"\xba\x01\n" +
+	"\rRecordingPart\x12\x14\n" +
+	"\x05index\x18\x01 \x01(\x05R\x05index\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12&\n" +
+	"\x0fstart_offset_ms\x18\x03 \x01(\x03R\rstartOffsetMs\x12\"\n" +
+	"\rend_offset_ms\x18\x04 \x01(\x03R\vendOffsetMs\x12\x1f\n" +
+	"\vduration_ms\x18\x05 \x01(\x03R\n" +
+	"durationMs\x12\x14\n" +
+	"\x05label\x18\x06 \x01(\tR\x05label\"\x8d\x01\n" +
 	"\x1bUpsertRoomRecordingResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x17\n" +
@@ -292,21 +403,24 @@ func file_recording_shelves_proto_rawDescGZIP() []byte {
 }
 
 var file_recording_shelves_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_recording_shelves_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_recording_shelves_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_recording_shelves_proto_goTypes = []any{
 	(RecordingStatus)(0),                // 0: shelves.recording.RecordingStatus
 	(*UpsertRoomRecordingRequest)(nil),  // 1: shelves.recording.UpsertRoomRecordingRequest
-	(*UpsertRoomRecordingResponse)(nil), // 2: shelves.recording.UpsertRoomRecordingResponse
+	(*RecordingPart)(nil),               // 2: shelves.recording.RecordingPart
+	(*UpsertRoomRecordingResponse)(nil), // 3: shelves.recording.UpsertRoomRecordingResponse
 }
 var file_recording_shelves_proto_depIdxs = []int32{
 	0, // 0: shelves.recording.UpsertRoomRecordingRequest.status:type_name -> shelves.recording.RecordingStatus
-	1, // 1: shelves.recording.RecordingShelfBridge.UpsertRoomRecording:input_type -> shelves.recording.UpsertRoomRecordingRequest
-	2, // 2: shelves.recording.RecordingShelfBridge.UpsertRoomRecording:output_type -> shelves.recording.UpsertRoomRecordingResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 1: shelves.recording.UpsertRoomRecordingRequest.quick_access_parts:type_name -> shelves.recording.RecordingPart
+	2, // 2: shelves.recording.UpsertRoomRecordingRequest.late_composite_parts:type_name -> shelves.recording.RecordingPart
+	1, // 3: shelves.recording.RecordingShelfBridge.UpsertRoomRecording:input_type -> shelves.recording.UpsertRoomRecordingRequest
+	3, // 4: shelves.recording.RecordingShelfBridge.UpsertRoomRecording:output_type -> shelves.recording.UpsertRoomRecordingResponse
+	4, // [4:5] is the sub-list for method output_type
+	3, // [3:4] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_recording_shelves_proto_init() }
@@ -320,7 +434,7 @@ func file_recording_shelves_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_recording_shelves_proto_rawDesc), len(file_recording_shelves_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

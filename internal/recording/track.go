@@ -23,48 +23,48 @@ type TrackWriter struct {
 	ssrc        uint32
 	payloadType uint8
 
-	rtpWriter   *rtp.Writer
-	segmentWriter io.WriteCloser
-	segmentStart time.Time
-	segmentIndex int
-	segmentBytes int64
+	rtpWriter      *rtp.Writer
+	segmentWriter  io.WriteCloser
+	segmentStart   time.Time
+	segmentIndex   int
+	segmentBytes   int64
 	segmentPackets int64
-	segments    []TrackSegmentInfo
-	startTime   time.Time
-	lastPacket  time.Time
-	endTime     *time.Time
-	packetCount int64
-	totalBytes  int64
+	segments       []TrackSegmentInfo
+	startTime      time.Time
+	lastPacket     time.Time
+	endTime        *time.Time
+	packetCount    int64
+	totalBytes     int64
 
 	closed bool
 	logger *zap.Logger
 
-	storage        storage.Storage
-	roomID         string
-	recordingID    string
+	storage         storage.Storage
+	roomID          string
+	recordingID     string
 	segmentDuration time.Duration
 	segmentMaxBytes int64
-	bufferSize     int
-	flushInterval  time.Duration
+	bufferSize      int
+	flushInterval   time.Duration
 }
 
 // TrackWriterConfig holds configuration for a track writer
 type TrackWriterConfig struct {
-	TrackID       string
-	ProducerID    string
-	PeerID        string
-	TrackType     TrackType
-	Codec         string
-	SSRC          uint32
-	PayloadType   uint8
-	BufferSize    int
-	FlushInterval time.Duration
-	Storage       storage.Storage
-	RoomID        string
-	RecordingID   string
+	TrackID         string
+	ProducerID      string
+	PeerID          string
+	TrackType       TrackType
+	Codec           string
+	SSRC            uint32
+	PayloadType     uint8
+	BufferSize      int
+	FlushInterval   time.Duration
+	Storage         storage.Storage
+	RoomID          string
+	RecordingID     string
 	SegmentDuration time.Duration
 	SegmentMaxBytes int64
-	Logger        *zap.Logger
+	Logger          *zap.Logger
 }
 
 // NewTrackWriter creates a new track writer
@@ -76,23 +76,23 @@ func NewTrackWriter(cfg TrackWriterConfig) (*TrackWriter, error) {
 	now := time.Now()
 
 	t := &TrackWriter{
-		trackID:     cfg.TrackID,
-		producerID:  cfg.ProducerID,
-		peerID:      cfg.PeerID,
-		trackType:   cfg.TrackType,
-		codec:       cfg.Codec,
-		ssrc:        cfg.SSRC,
-		payloadType: cfg.PayloadType,
-		startTime:   now,
-		lastPacket:  now,
-		logger:      cfg.Logger,
-		storage:        cfg.Storage,
-		roomID:         cfg.RoomID,
-		recordingID:    cfg.RecordingID,
+		trackID:         cfg.TrackID,
+		producerID:      cfg.ProducerID,
+		peerID:          cfg.PeerID,
+		trackType:       cfg.TrackType,
+		codec:           cfg.Codec,
+		ssrc:            cfg.SSRC,
+		payloadType:     cfg.PayloadType,
+		startTime:       now,
+		lastPacket:      now,
+		logger:          cfg.Logger,
+		storage:         cfg.Storage,
+		roomID:          cfg.RoomID,
+		recordingID:     cfg.RecordingID,
 		segmentDuration: cfg.SegmentDuration,
 		segmentMaxBytes: cfg.SegmentMaxBytes,
-		bufferSize:     cfg.BufferSize,
-		flushInterval:  cfg.FlushInterval,
+		bufferSize:      cfg.BufferSize,
+		flushInterval:   cfg.FlushInterval,
 	}
 
 	if err := t.startNewSegment(now); err != nil {
@@ -350,6 +350,29 @@ func (t *TrackWriter) rotateSegment() error {
 		return err
 	}
 	return t.startNewSegment(time.Now())
+}
+
+// RotateAt closes the current segment at the provided time and starts a new segment.
+func (t *TrackWriter) RotateAt(cutoff time.Time) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if t.closed {
+		return nil
+	}
+
+	if cutoff.IsZero() {
+		cutoff = time.Now()
+	}
+	if cutoff.Before(t.segmentStart) {
+		cutoff = t.segmentStart
+	}
+
+	if err := t.closeSegmentAt(cutoff); err != nil {
+		return err
+	}
+
+	return t.startNewSegment(cutoff)
 }
 
 func (t *TrackWriter) statsLocked() TrackStats {

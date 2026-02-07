@@ -8,14 +8,19 @@ import (
 
 // Policy represents recording policy settings
 type Policy struct {
-	Enabled                bool
-	WhoCanRecord           WhoCanRecord
-	AutoRecord             bool
-	RecordAudio            bool
-	RecordVideo            bool
-	RecordScreenshare      bool
-	WhoCanAccessRecordings AccessLevel
-	AllowedAccessorIds     []string
+	Enabled                      bool
+	WhoCanRecord                 WhoCanRecord
+	AutoRecord                   bool
+	AutoRecordQuickAccess        bool
+	AutoRecordLateComposite      bool
+	RecordAudio                  bool
+	RecordVideo                  bool
+	RecordScreenshare            bool
+	WhoCanAccessRecordings       AccessLevel
+	AllowedAccessorIds           []string
+	QuickAccessLayout            RecordingLayout
+	QuickAccessPartDurationSec   int32
+	LateCompositePartDurationSec int32
 }
 
 // AccessLevel defines post-meeting recording access
@@ -71,40 +76,85 @@ func PolicyFromProto(p *pb.RecordingPolicy) *Policy {
 	}
 
 	return &Policy{
-		Enabled:                p.Enabled,
-		WhoCanRecord:           WhoCanRecord(p.WhoCanRecord),
-		AutoRecord:             p.AutoRecord,
-		RecordAudio:            p.RecordAudio,
-		RecordVideo:            p.RecordVideo,
-		RecordScreenshare:      p.RecordScreenshare,
-		WhoCanAccessRecordings: AccessLevel(p.WhoCanAccessRecordings),
-		AllowedAccessorIds:     p.AllowedAccessorIds,
+		Enabled:                      p.Enabled,
+		WhoCanRecord:                 WhoCanRecord(p.WhoCanRecord),
+		AutoRecord:                   p.AutoRecord,
+		AutoRecordQuickAccess:        p.AutoRecordQuickAccess,
+		AutoRecordLateComposite:      p.AutoRecordLateComposite,
+		RecordAudio:                  p.RecordAudio,
+		RecordVideo:                  p.RecordVideo,
+		RecordScreenshare:            p.RecordScreenshare,
+		WhoCanAccessRecordings:       AccessLevel(p.WhoCanAccessRecordings),
+		AllowedAccessorIds:           p.AllowedAccessorIds,
+		QuickAccessLayout:            RecordingLayout(p.QuickAccessLayout),
+		QuickAccessPartDurationSec:   p.QuickAccessPartDurationSec,
+		LateCompositePartDurationSec: p.LateCompositePartDurationSec,
+	}.withDefaults()
+}
+
+func (p *Policy) withDefaults() *Policy {
+	if p.QuickAccessLayout == LayoutUnspecified {
+		p.QuickAccessLayout = LayoutGrid
 	}
+	if p.QuickAccessPartDurationSec == 0 {
+		p.QuickAccessPartDurationSec = 720
+	}
+	if p.LateCompositePartDurationSec == 0 {
+		p.LateCompositePartDurationSec = 720
+	}
+	return p
 }
 
 // ToProto converts internal Policy to protobuf RecordingPolicy
 func (p *Policy) ToProto() *pb.RecordingPolicy {
 	return &pb.RecordingPolicy{
-		Enabled:                p.Enabled,
-		WhoCanRecord:           pb.WhoCanRecord(p.WhoCanRecord),
-		AutoRecord:             p.AutoRecord,
-		RecordAudio:            p.RecordAudio,
-		RecordVideo:            p.RecordVideo,
-		RecordScreenshare:      p.RecordScreenshare,
-		WhoCanAccessRecordings: pb.AccessLevel(p.WhoCanAccessRecordings),
-		AllowedAccessorIds:     p.AllowedAccessorIds,
+		Enabled:                      p.Enabled,
+		WhoCanRecord:                 pb.WhoCanRecord(p.WhoCanRecord),
+		AutoRecord:                   p.AutoRecord,
+		AutoRecordQuickAccess:        p.AutoRecordQuickAccess,
+		AutoRecordLateComposite:      p.AutoRecordLateComposite,
+		RecordAudio:                  p.RecordAudio,
+		RecordVideo:                  p.RecordVideo,
+		RecordScreenshare:            p.RecordScreenshare,
+		WhoCanAccessRecordings:       pb.AccessLevel(p.WhoCanAccessRecordings),
+		AllowedAccessorIds:           p.AllowedAccessorIds,
+		QuickAccessLayout:            pb.RecordingLayout(p.QuickAccessLayout),
+		QuickAccessPartDurationSec:   p.QuickAccessPartDurationSec,
+		LateCompositePartDurationSec: p.LateCompositePartDurationSec,
 	}
 }
 
 // DefaultPolicy returns the default recording policy
 func DefaultPolicy() *Policy {
 	return &Policy{
-		Enabled:           true,
-		WhoCanRecord:      WhoCanRecordHostOnly,
-		AutoRecord:        false,
-		RecordAudio:       true,
-		RecordVideo:       true,
-		RecordScreenshare: true,
+		Enabled:                      true,
+		WhoCanRecord:                 WhoCanRecordHostOnly,
+		AutoRecord:                   false,
+		AutoRecordQuickAccess:        false,
+		AutoRecordLateComposite:      false,
+		RecordAudio:                  true,
+		RecordVideo:                  true,
+		RecordScreenshare:            true,
+		QuickAccessLayout:            LayoutGrid,
+		QuickAccessPartDurationSec:   720,
+		LateCompositePartDurationSec: 720,
+	}.withDefaults()
+}
+
+// RecordingLayout defines supported layout modes for quick access exports.
+type RecordingLayout int
+
+const (
+	LayoutUnspecified RecordingLayout = iota
+	LayoutGrid
+)
+
+func (l RecordingLayout) String() string {
+	switch l {
+	case LayoutGrid:
+		return "grid"
+	default:
+		return "unspecified"
 	}
 }
 

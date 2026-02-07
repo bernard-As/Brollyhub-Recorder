@@ -21,15 +21,26 @@ type Client struct {
 }
 
 type UpsertRequest struct {
-	RoomID      string
-	RecordingID string
-	Status      pb.RecordingStatus
-	StartedAt   int64
-	CompletedAt int64
-	S3Prefix    string
-	MetadataKey string
-	TimelineKey string
-	ServiceID   string
+	RoomID             string
+	RecordingID        string
+	Status             pb.RecordingStatus
+	StartedAt          int64
+	CompletedAt        int64
+	S3Prefix           string
+	MetadataKey        string
+	TimelineKey        string
+	ServiceID          string
+	QuickAccessParts   []RecordingPart
+	LateCompositeParts []RecordingPart
+}
+
+type RecordingPart struct {
+	Index         int32
+	Key           string
+	StartOffsetMs int64
+	EndOffsetMs   int64
+	DurationMs    int64
+	Label         string
 }
 
 func NewClient(cfg config.ShelvesConfig, logger *zap.Logger) (*Client, error) {
@@ -73,16 +84,36 @@ func (c *Client) UpsertRoomRecording(ctx context.Context, req UpsertRequest) err
 		defer cancel()
 	}
 
+	reqParts := func(parts []RecordingPart) []*pb.RecordingPart {
+		if len(parts) == 0 {
+			return nil
+		}
+		out := make([]*pb.RecordingPart, 0, len(parts))
+		for _, part := range parts {
+			out = append(out, &pb.RecordingPart{
+				Index:         part.Index,
+				Key:           part.Key,
+				StartOffsetMs: part.StartOffsetMs,
+				EndOffsetMs:   part.EndOffsetMs,
+				DurationMs:    part.DurationMs,
+				Label:         part.Label,
+			})
+		}
+		return out
+	}
+
 	_, err := c.client.UpsertRoomRecording(ctx, &pb.UpsertRoomRecordingRequest{
-		RoomId:      req.RoomID,
-		RecordingId: req.RecordingID,
-		Status:      req.Status,
-		StartedAt:   req.StartedAt,
-		CompletedAt: req.CompletedAt,
-		S3Prefix:    req.S3Prefix,
-		MetadataKey: req.MetadataKey,
-		TimelineKey: req.TimelineKey,
-		ServiceId:   req.ServiceID,
+		RoomId:             req.RoomID,
+		RecordingId:        req.RecordingID,
+		Status:             req.Status,
+		StartedAt:          req.StartedAt,
+		CompletedAt:        req.CompletedAt,
+		S3Prefix:           req.S3Prefix,
+		MetadataKey:        req.MetadataKey,
+		TimelineKey:        req.TimelineKey,
+		ServiceId:          req.ServiceID,
+		QuickAccessParts:   reqParts(req.QuickAccessParts),
+		LateCompositeParts: reqParts(req.LateCompositeParts),
 	})
 	if err != nil {
 		c.logger.Warn("Shelves recording upsert failed", zap.Error(err))

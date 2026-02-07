@@ -10,11 +10,12 @@ import (
 
 // Config holds all configuration for the recording service
 type Config struct {
-	GRPC      GRPCConfig      `yaml:"grpc"`
-	Storage   StorageConfig   `yaml:"storage"`
-	Recording RecordingConfig `yaml:"recording"`
-	Shelves   ShelvesConfig   `yaml:"shelves"`
-	Logging   LoggingConfig   `yaml:"logging"`
+	GRPC       GRPCConfig       `yaml:"grpc"`
+	Storage    StorageConfig    `yaml:"storage"`
+	Recording  RecordingConfig  `yaml:"recording"`
+	Shelves    ShelvesConfig    `yaml:"shelves"`
+	Compositer CompositerConfig `yaml:"compositer"`
+	Logging    LoggingConfig    `yaml:"logging"`
 }
 
 // GRPCConfig holds gRPC server configuration
@@ -52,6 +53,16 @@ type ShelvesConfig struct {
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
 	Enabled bool          `yaml:"enabled"`
+}
+
+// CompositerConfig holds Compositer HTTP configuration
+type CompositerConfig struct {
+	Host       string        `yaml:"host"`
+	Port       int           `yaml:"port"`
+	Timeout    time.Duration `yaml:"timeout"`
+	Enabled    bool          `yaml:"enabled"`
+	ServiceKey string        `yaml:"service_key"`
+	UseSSL     bool          `yaml:"use_ssl"`
 }
 
 // LoggingConfig holds logging configuration
@@ -121,6 +132,15 @@ func (c *Config) setDefaults() {
 		Port:    50070,
 		Timeout: 5 * time.Second,
 		Enabled: true,
+	}
+
+	c.Compositer = CompositerConfig{
+		Host:       "compositer",
+		Port:       50085,
+		Timeout:    30 * time.Second,
+		Enabled:    true,
+		ServiceKey: "",
+		UseSSL:     false,
 	}
 
 	c.Logging = LoggingConfig{
@@ -198,6 +218,31 @@ func (c *Config) applyEnvOverrides() {
 	if v := os.Getenv("RECORDING_SHELVES_GRPC_ENABLED"); v != "" {
 		c.Shelves.Enabled = v == "true"
 	}
+
+	// Compositer HTTP
+	if v := os.Getenv("RECORDING_COMPOSITER_HOST"); v != "" {
+		c.Compositer.Host = v
+	}
+	if v := os.Getenv("RECORDING_COMPOSITER_PORT"); v != "" {
+		var port int
+		if _, err := fmt.Sscanf(v, "%d", &port); err == nil {
+			c.Compositer.Port = port
+		}
+	}
+	if v := os.Getenv("RECORDING_COMPOSITER_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			c.Compositer.Timeout = d
+		}
+	}
+	if v := os.Getenv("RECORDING_COMPOSITER_ENABLED"); v != "" {
+		c.Compositer.Enabled = v == "true"
+	}
+	if v := os.Getenv("RECORDING_COMPOSITER_SERVICE_KEY"); v != "" {
+		c.Compositer.ServiceKey = v
+	}
+	if v := os.Getenv("RECORDING_COMPOSITER_USE_SSL"); v != "" {
+		c.Compositer.UseSSL = v == "true"
+	}
 }
 
 // Address returns the gRPC server address
@@ -207,5 +252,10 @@ func (c *GRPCConfig) Address() string {
 
 // Address returns the Shelves gRPC server address.
 func (c *ShelvesConfig) Address() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
+// Address returns the Compositer base address.
+func (c *CompositerConfig) Address() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }

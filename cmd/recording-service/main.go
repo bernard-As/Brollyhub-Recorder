@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/brollyhub/recording/internal/compositer"
 	"github.com/brollyhub/recording/internal/config"
 	grpcserver "github.com/brollyhub/recording/internal/grpc"
 	"github.com/brollyhub/recording/internal/recording"
@@ -84,12 +85,18 @@ func main() {
 		logger.Warn("Failed to connect to Shelves gRPC", zap.Error(err))
 	}
 
+	compositerClient := compositer.NewClient(cfg.Compositer, logger)
+	if compositerClient != nil && compositerClient.Enabled() {
+		logger.Info("Compositer client enabled", zap.String("compositer_address", cfg.Compositer.Address()))
+	}
+
 	// Setup gRPC server
 	server := grpcserver.NewServer(grpcserver.ServerConfig{
-		Config:        &cfg.GRPC,
-		Manager:       manager,
-		Logger:        logger,
-		ShelvesClient: shelvesClient,
+		Config:           &cfg.GRPC,
+		Manager:          manager,
+		Logger:           logger,
+		ShelvesClient:    shelvesClient,
+		CompositerClient: compositerClient,
 	})
 
 	// Start health check HTTP server

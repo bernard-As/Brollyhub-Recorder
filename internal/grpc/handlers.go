@@ -93,7 +93,17 @@ func (s *Server) handleStartRecording(stream pb.RecordingSfuBridge_ConnectServer
 		return err
 	}
 
-	s.notifyRoomRecording(req.RoomId, rec.RecordingID(), pb.RecordingStatus_RECORDING_STATUS_RECORDING, rec.StartTime(), time.Time{})
+	s.notifyRoomRecording(
+		req.RoomId,
+		rec.RecordingID(),
+		pb.RecordingStatus_RECORDING_STATUS_RECORDING,
+		rec.StartTime(),
+		time.Time{},
+		nil,
+		nil,
+	)
+
+	s.startLiveRecorder(rec)
 	return nil
 }
 
@@ -109,14 +119,18 @@ func (s *Server) handleStopRecording(stream pb.RecordingSfuBridge_ConnectServer,
 	var stats recording.RecordingStats
 	var startTime time.Time
 	var recordingID string
+	var policy recording.Policy
 	if exists {
 		stats = rec.Stats()
 		startTime = rec.StartTime()
 		recordingID = rec.RecordingID()
+		policy = rec.PolicySnapshot()
 	}
 	if recordingID == "" {
 		recordingID = req.RecordingId
 	}
+
+	liveSession := s.stopLiveRecorder(req.RoomId)
 
 	// Stop recording
 	err := s.manager.StopRecording(req.RoomId, req.StoppedBy)
@@ -160,7 +174,22 @@ func (s *Server) handleStopRecording(stream pb.RecordingSfuBridge_ConnectServer,
 	}
 
 	stoppedAt := time.Now()
-	s.notifyRoomRecording(req.RoomId, recordingID, pb.RecordingStatus_RECORDING_STATUS_COMPLETED, startTime, stoppedAt)
+	quickParts, lateParts := buildRecordingPartsForPolicy(
+		req.RoomId,
+		recordingID,
+		stats.Duration,
+		policy,
+	)
+	s.notifyRoomRecording(
+		req.RoomId,
+		recordingID,
+		pb.RecordingStatus_RECORDING_STATUS_COMPLETED,
+		startTime,
+		stoppedAt,
+		quickParts,
+		lateParts,
+	)
+	s.queueFinalExports(req.RoomId, recordingID, stats.Duration, policy, liveSession, quickParts, lateParts)
 	return nil
 }
 
@@ -317,7 +346,15 @@ func (s *Server) handleHeartbeat(stream pb.RecordingSfuBridge_ConnectServer, hb 
 	})
 }
 
-func (s *Server) notifyRoomRecording(roomID, recordingID string, status pb.RecordingStatus, startedAt, completedAt time.Time) {
+func (s *Server) notifyRoomRecording(
+	roomID,
+	recordingID string,
+	status pb.RecordingStatus,
+	startedAt,
+	completedAt time.Time,
+	quickAccessParts []shelves.RecordingPart,
+	lateCompositeParts []shelves.RecordingPart,
+) {
 	if s.shelvesClient == nil {
 		return
 	}
@@ -327,14 +364,16 @@ func (s *Server) notifyRoomRecording(roomID, recordingID string, status pb.Recor
 	timelineKey := fmt.Sprintf("%stimeline.json", prefix)
 
 	req := shelves.UpsertRequest{
-		RoomID:      roomID,
-		RecordingID: recordingID,
-		Status:      status,
-		StartedAt:   startedAt.UnixMilli(),
-		S3Prefix:    prefix,
-		MetadataKey: metadataKey,
-		TimelineKey: timelineKey,
-		ServiceID:   s.serviceID,
+		RoomID:             roomID,
+		RecordingID:        recordingID,
+		Status:             status,
+		StartedAt:          startedAt.UnixMilli(),
+		S3Prefix:           prefix,
+		MetadataKey:        metadataKey,
+		TimelineKey:        timelineKey,
+		ServiceID:          s.serviceID,
+		QuickAccessParts:   quickAccessParts,
+		LateCompositeParts: lateCompositeParts,
 	}
 
 	if !completedAt.IsZero() {
@@ -353,4 +392,63 @@ func timestampMsToTime(value int64) time.Time {
 		return time.Time{}
 	}
 	return time.UnixMilli(value)
+}
+
+func buildRecordingPartsForPolicy(
+	roomID string,
+	recordingID string,
+	duration time.Duration,
+	policy recording.Policy,
+) ([]shelves.RecordingPart, []shelves.RecordingPart) {
+	if duration <= 0 {
+		return nil, nil
+	}
+
+	quickParts := []shelves.RecordingPart{}
+	lateParts := []shelves.RecordingPart{}
+
+	if policy.AutoRecordQuickAccess && policy.QuickAccessPartDurationSec > 0 {
+		prefix := fmt.Sprintf("rooms/%s/%s/quick_access/part-", roomID, recordingID)
+		quickParts = buildParts(duration, policy.QuickAccessPartDurationSec, prefix, "Quick Access")
+	}
+	if policy.AutoRecordLateComposite && policy.LateCompositePartDurationSec > 0 {
+		prefix := fmt.Sprintf("rooms/%s/%s/processed/exports/part-", roomID, recordingID)
+		lateParts = buildParts(duration, policy.LateCompositePartDurationSec, prefix, "Final Export")
+	}
+
+	return quickParts, lateParts
+}
+
+func buildParts(duration time.Duration, partDurationSec int32, keyPrefix, labelPrefix string) []shelves.RecordingPart {
+	if partDurationSec <= 0 {
+		return nil
+	}
+	partDuration := time.Duration(partDurationSec) * time.Second
+	partCount := int(duration / partDuration)
+	if duration%partDuration != 0 {
+		partCount++
+	}
+	if partCount <= 0 {
+		partCount = 1
+	}
+
+	parts := make([]shelves.RecordingPart, 0, partCount)
+	for i := 0; i < partCount; i++ {
+		startOffset := time.Duration(i) * partDuration
+		endOffset := startOffset + partDuration
+		if endOffset > duration {
+			endOffset = duration
+		}
+		partIndex := int32(i + 1)
+		key := fmt.Sprintf("%s%04d.mp4", keyPrefix, partIndex)
+		parts = append(parts, shelves.RecordingPart{
+			Index:         partIndex,
+			Key:           key,
+			StartOffsetMs: startOffset.Milliseconds(),
+			EndOffsetMs:   endOffset.Milliseconds(),
+			DurationMs:    (endOffset - startOffset).Milliseconds(),
+			Label:         fmt.Sprintf("%s Part %d", labelPrefix, partIndex),
+		})
+	}
+	return parts
 }

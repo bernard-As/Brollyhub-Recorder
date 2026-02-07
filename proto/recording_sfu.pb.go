@@ -185,6 +185,52 @@ func (TrackType) EnumDescriptor() ([]byte, []int) {
 	return file_recording_sfu_proto_rawDescGZIP(), []int{2}
 }
 
+type RecordingLayout int32
+
+const (
+	RecordingLayout_RECORDING_LAYOUT_UNSPECIFIED RecordingLayout = 0
+	RecordingLayout_RECORDING_LAYOUT_GRID        RecordingLayout = 1
+)
+
+// Enum value maps for RecordingLayout.
+var (
+	RecordingLayout_name = map[int32]string{
+		0: "RECORDING_LAYOUT_UNSPECIFIED",
+		1: "RECORDING_LAYOUT_GRID",
+	}
+	RecordingLayout_value = map[string]int32{
+		"RECORDING_LAYOUT_UNSPECIFIED": 0,
+		"RECORDING_LAYOUT_GRID":        1,
+	}
+)
+
+func (x RecordingLayout) Enum() *RecordingLayout {
+	p := new(RecordingLayout)
+	*p = x
+	return p
+}
+
+func (x RecordingLayout) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RecordingLayout) Descriptor() protoreflect.EnumDescriptor {
+	return file_recording_sfu_proto_enumTypes[3].Descriptor()
+}
+
+func (RecordingLayout) Type() protoreflect.EnumType {
+	return &file_recording_sfu_proto_enumTypes[3]
+}
+
+func (x RecordingLayout) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RecordingLayout.Descriptor instead.
+func (RecordingLayout) EnumDescriptor() ([]byte, []int) {
+	return file_recording_sfu_proto_rawDescGZIP(), []int{3}
+}
+
 type RecordingToSfu struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Message:
@@ -1774,17 +1820,22 @@ func (x *ActiveSpeakerEvent) GetPeerId() string {
 }
 
 type RecordingPolicy struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Enabled                bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	WhoCanRecord           WhoCanRecord           `protobuf:"varint,2,opt,name=who_can_record,json=whoCanRecord,proto3,enum=recording.WhoCanRecord" json:"who_can_record,omitempty"` // Placeholder for future participant recording
-	AutoRecord             bool                   `protobuf:"varint,3,opt,name=auto_record,json=autoRecord,proto3" json:"auto_record,omitempty"`
-	RecordAudio            bool                   `protobuf:"varint,4,opt,name=record_audio,json=recordAudio,proto3" json:"record_audio,omitempty"`
-	RecordVideo            bool                   `protobuf:"varint,5,opt,name=record_video,json=recordVideo,proto3" json:"record_video,omitempty"`
-	RecordScreenshare      bool                   `protobuf:"varint,6,opt,name=record_screenshare,json=recordScreenshare,proto3" json:"record_screenshare,omitempty"`
-	WhoCanAccessRecordings AccessLevel            `protobuf:"varint,7,opt,name=who_can_access_recordings,json=whoCanAccessRecordings,proto3,enum=recording.AccessLevel" json:"who_can_access_recordings,omitempty"` // Post-meeting access control
-	AllowedAccessorIds     []string               `protobuf:"bytes,8,rep,name=allowed_accessor_ids,json=allowedAccessorIds,proto3" json:"allowed_accessor_ids,omitempty"`                                           // User IDs when ACCESS_SELECTED
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"open.v1"`
+	Enabled                      bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	WhoCanRecord                 WhoCanRecord           `protobuf:"varint,2,opt,name=who_can_record,json=whoCanRecord,proto3,enum=recording.WhoCanRecord" json:"who_can_record,omitempty"` // Placeholder for future participant recording
+	AutoRecord                   bool                   `protobuf:"varint,3,opt,name=auto_record,json=autoRecord,proto3" json:"auto_record,omitempty"`
+	RecordAudio                  bool                   `protobuf:"varint,4,opt,name=record_audio,json=recordAudio,proto3" json:"record_audio,omitempty"`
+	RecordVideo                  bool                   `protobuf:"varint,5,opt,name=record_video,json=recordVideo,proto3" json:"record_video,omitempty"`
+	RecordScreenshare            bool                   `protobuf:"varint,6,opt,name=record_screenshare,json=recordScreenshare,proto3" json:"record_screenshare,omitempty"`
+	WhoCanAccessRecordings       AccessLevel            `protobuf:"varint,7,opt,name=who_can_access_recordings,json=whoCanAccessRecordings,proto3,enum=recording.AccessLevel" json:"who_can_access_recordings,omitempty"` // Post-meeting access control
+	AllowedAccessorIds           []string               `protobuf:"bytes,8,rep,name=allowed_accessor_ids,json=allowedAccessorIds,proto3" json:"allowed_accessor_ids,omitempty"`                                           // User IDs when ACCESS_SELECTED
+	AutoRecordQuickAccess        bool                   `protobuf:"varint,9,opt,name=auto_record_quick_access,json=autoRecordQuickAccess,proto3" json:"auto_record_quick_access,omitempty"`
+	AutoRecordLateComposite      bool                   `protobuf:"varint,10,opt,name=auto_record_late_composite,json=autoRecordLateComposite,proto3" json:"auto_record_late_composite,omitempty"`
+	QuickAccessPartDurationSec   int32                  `protobuf:"varint,11,opt,name=quick_access_part_duration_sec,json=quickAccessPartDurationSec,proto3" json:"quick_access_part_duration_sec,omitempty"`
+	LateCompositePartDurationSec int32                  `protobuf:"varint,12,opt,name=late_composite_part_duration_sec,json=lateCompositePartDurationSec,proto3" json:"late_composite_part_duration_sec,omitempty"`
+	QuickAccessLayout            RecordingLayout        `protobuf:"varint,13,opt,name=quick_access_layout,json=quickAccessLayout,proto3,enum=recording.RecordingLayout" json:"quick_access_layout,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *RecordingPolicy) Reset() {
@@ -1871,6 +1922,41 @@ func (x *RecordingPolicy) GetAllowedAccessorIds() []string {
 		return x.AllowedAccessorIds
 	}
 	return nil
+}
+
+func (x *RecordingPolicy) GetAutoRecordQuickAccess() bool {
+	if x != nil {
+		return x.AutoRecordQuickAccess
+	}
+	return false
+}
+
+func (x *RecordingPolicy) GetAutoRecordLateComposite() bool {
+	if x != nil {
+		return x.AutoRecordLateComposite
+	}
+	return false
+}
+
+func (x *RecordingPolicy) GetQuickAccessPartDurationSec() int32 {
+	if x != nil {
+		return x.QuickAccessPartDurationSec
+	}
+	return 0
+}
+
+func (x *RecordingPolicy) GetLateCompositePartDurationSec() int32 {
+	if x != nil {
+		return x.LateCompositePartDurationSec
+	}
+	return 0
+}
+
+func (x *RecordingPolicy) GetQuickAccessLayout() RecordingLayout {
+	if x != nil {
+		return x.QuickAccessLayout
+	}
+	return RecordingLayout_RECORDING_LAYOUT_UNSPECIFIED
 }
 
 type Heartbeat struct {
@@ -2186,7 +2272,7 @@ const file_recording_sfu_proto_rawDesc = "" +
 	"\rPeerLeftEvent\x12\x17\n" +
 	"\apeer_id\x18\x01 \x01(\tR\x06peerId\"-\n" +
 	"\x12ActiveSpeakerEvent\x12\x17\n" +
-	"\apeer_id\x18\x01 \x01(\tR\x06peerId\"\x85\x03\n" +
+	"\apeer_id\x18\x01 \x01(\tR\x06peerId\"\xd3\x05\n" +
 	"\x0fRecordingPolicy\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12=\n" +
 	"\x0ewho_can_record\x18\x02 \x01(\x0e2\x17.recording.WhoCanRecordR\fwhoCanRecord\x12\x1f\n" +
@@ -2196,7 +2282,13 @@ const file_recording_sfu_proto_rawDesc = "" +
 	"\frecord_video\x18\x05 \x01(\bR\vrecordVideo\x12-\n" +
 	"\x12record_screenshare\x18\x06 \x01(\bR\x11recordScreenshare\x12Q\n" +
 	"\x19who_can_access_recordings\x18\a \x01(\x0e2\x16.recording.AccessLevelR\x16whoCanAccessRecordings\x120\n" +
-	"\x14allowed_accessor_ids\x18\b \x03(\tR\x12allowedAccessorIds\")\n" +
+	"\x14allowed_accessor_ids\x18\b \x03(\tR\x12allowedAccessorIds\x127\n" +
+	"\x18auto_record_quick_access\x18\t \x01(\bR\x15autoRecordQuickAccess\x12;\n" +
+	"\x1aauto_record_late_composite\x18\n" +
+	" \x01(\bR\x17autoRecordLateComposite\x12B\n" +
+	"\x1equick_access_part_duration_sec\x18\v \x01(\x05R\x1aquickAccessPartDurationSec\x12F\n" +
+	" late_composite_part_duration_sec\x18\f \x01(\x05R\x1clateCompositePartDurationSec\x12J\n" +
+	"\x13quick_access_layout\x18\r \x01(\x0e2\x1a.recording.RecordingLayoutR\x11quickAccessLayout\")\n" +
 	"\tHeartbeat\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\"x\n" +
 	"\fErrorMessage\x12\x12\n" +
@@ -2230,7 +2322,10 @@ const file_recording_sfu_proto_rawDesc = "" +
 	"\x16TRACK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05AUDIO\x10\x01\x12\t\n" +
 	"\x05VIDEO\x10\x02\x12\x0f\n" +
-	"\vSCREENSHARE\x10\x032Y\n" +
+	"\vSCREENSHARE\x10\x03*N\n" +
+	"\x0fRecordingLayout\x12 \n" +
+	"\x1cRECORDING_LAYOUT_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15RECORDING_LAYOUT_GRID\x10\x012Y\n" +
 	"\x12RecordingSfuBridge\x12C\n" +
 	"\aConnect\x12\x19.recording.SfuToRecording\x1a\x19.recording.RecordingToSfu(\x010\x01B&Z$github.com/brollyhub/recording/protob\x06proto3"
 
@@ -2246,74 +2341,76 @@ func file_recording_sfu_proto_rawDescGZIP() []byte {
 	return file_recording_sfu_proto_rawDescData
 }
 
-var file_recording_sfu_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_recording_sfu_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_recording_sfu_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_recording_sfu_proto_goTypes = []any{
 	(WhoCanRecord)(0),               // 0: recording.WhoCanRecord
 	(AccessLevel)(0),                // 1: recording.AccessLevel
 	(TrackType)(0),                  // 2: recording.TrackType
-	(*RecordingToSfu)(nil),          // 3: recording.RecordingToSfu
-	(*SfuToRecording)(nil),          // 4: recording.SfuToRecording
-	(*RegisterRequest)(nil),         // 5: recording.RegisterRequest
-	(*RegisterResponse)(nil),        // 6: recording.RegisterResponse
-	(*StartRecordingRequest)(nil),   // 7: recording.StartRecordingRequest
-	(*StartRecordingResponse)(nil),  // 8: recording.StartRecordingResponse
-	(*StopRecordingRequest)(nil),    // 9: recording.StopRecordingRequest
-	(*StopRecordingResponse)(nil),   // 10: recording.StopRecordingResponse
-	(*SubscribeTrackRequest)(nil),   // 11: recording.SubscribeTrackRequest
-	(*UnsubscribeTrackRequest)(nil), // 12: recording.UnsubscribeTrackRequest
-	(*RtpPacket)(nil),               // 13: recording.RtpPacket
-	(*RoomEvent)(nil),               // 14: recording.RoomEvent
-	(*ProducerCreatedEvent)(nil),    // 15: recording.ProducerCreatedEvent
-	(*ProducerClosedEvent)(nil),     // 16: recording.ProducerClosedEvent
-	(*ProducerPausedEvent)(nil),     // 17: recording.ProducerPausedEvent
-	(*ProducerResumedEvent)(nil),    // 18: recording.ProducerResumedEvent
-	(*PeerJoinedEvent)(nil),         // 19: recording.PeerJoinedEvent
-	(*PeerLeftEvent)(nil),           // 20: recording.PeerLeftEvent
-	(*ActiveSpeakerEvent)(nil),      // 21: recording.ActiveSpeakerEvent
-	(*RecordingPolicy)(nil),         // 22: recording.RecordingPolicy
-	(*Heartbeat)(nil),               // 23: recording.Heartbeat
-	(*ErrorMessage)(nil),            // 24: recording.ErrorMessage
-	(*RecordingStats)(nil),          // 25: recording.RecordingStats
+	(RecordingLayout)(0),            // 3: recording.RecordingLayout
+	(*RecordingToSfu)(nil),          // 4: recording.RecordingToSfu
+	(*SfuToRecording)(nil),          // 5: recording.SfuToRecording
+	(*RegisterRequest)(nil),         // 6: recording.RegisterRequest
+	(*RegisterResponse)(nil),        // 7: recording.RegisterResponse
+	(*StartRecordingRequest)(nil),   // 8: recording.StartRecordingRequest
+	(*StartRecordingResponse)(nil),  // 9: recording.StartRecordingResponse
+	(*StopRecordingRequest)(nil),    // 10: recording.StopRecordingRequest
+	(*StopRecordingResponse)(nil),   // 11: recording.StopRecordingResponse
+	(*SubscribeTrackRequest)(nil),   // 12: recording.SubscribeTrackRequest
+	(*UnsubscribeTrackRequest)(nil), // 13: recording.UnsubscribeTrackRequest
+	(*RtpPacket)(nil),               // 14: recording.RtpPacket
+	(*RoomEvent)(nil),               // 15: recording.RoomEvent
+	(*ProducerCreatedEvent)(nil),    // 16: recording.ProducerCreatedEvent
+	(*ProducerClosedEvent)(nil),     // 17: recording.ProducerClosedEvent
+	(*ProducerPausedEvent)(nil),     // 18: recording.ProducerPausedEvent
+	(*ProducerResumedEvent)(nil),    // 19: recording.ProducerResumedEvent
+	(*PeerJoinedEvent)(nil),         // 20: recording.PeerJoinedEvent
+	(*PeerLeftEvent)(nil),           // 21: recording.PeerLeftEvent
+	(*ActiveSpeakerEvent)(nil),      // 22: recording.ActiveSpeakerEvent
+	(*RecordingPolicy)(nil),         // 23: recording.RecordingPolicy
+	(*Heartbeat)(nil),               // 24: recording.Heartbeat
+	(*ErrorMessage)(nil),            // 25: recording.ErrorMessage
+	(*RecordingStats)(nil),          // 26: recording.RecordingStats
 }
 var file_recording_sfu_proto_depIdxs = []int32{
-	6,  // 0: recording.RecordingToSfu.register_response:type_name -> recording.RegisterResponse
-	8,  // 1: recording.RecordingToSfu.start_recording_response:type_name -> recording.StartRecordingResponse
-	10, // 2: recording.RecordingToSfu.stop_recording_response:type_name -> recording.StopRecordingResponse
-	24, // 3: recording.RecordingToSfu.error:type_name -> recording.ErrorMessage
-	23, // 4: recording.RecordingToSfu.heartbeat:type_name -> recording.Heartbeat
-	5,  // 5: recording.SfuToRecording.register:type_name -> recording.RegisterRequest
-	7,  // 6: recording.SfuToRecording.start_recording:type_name -> recording.StartRecordingRequest
-	9,  // 7: recording.SfuToRecording.stop_recording:type_name -> recording.StopRecordingRequest
-	11, // 8: recording.SfuToRecording.subscribe_track:type_name -> recording.SubscribeTrackRequest
-	12, // 9: recording.SfuToRecording.unsubscribe_track:type_name -> recording.UnsubscribeTrackRequest
-	13, // 10: recording.SfuToRecording.rtp_packet:type_name -> recording.RtpPacket
-	14, // 11: recording.SfuToRecording.room_event:type_name -> recording.RoomEvent
-	23, // 12: recording.SfuToRecording.heartbeat:type_name -> recording.Heartbeat
-	22, // 13: recording.StartRecordingRequest.policy:type_name -> recording.RecordingPolicy
-	25, // 14: recording.StopRecordingResponse.stats:type_name -> recording.RecordingStats
+	7,  // 0: recording.RecordingToSfu.register_response:type_name -> recording.RegisterResponse
+	9,  // 1: recording.RecordingToSfu.start_recording_response:type_name -> recording.StartRecordingResponse
+	11, // 2: recording.RecordingToSfu.stop_recording_response:type_name -> recording.StopRecordingResponse
+	25, // 3: recording.RecordingToSfu.error:type_name -> recording.ErrorMessage
+	24, // 4: recording.RecordingToSfu.heartbeat:type_name -> recording.Heartbeat
+	6,  // 5: recording.SfuToRecording.register:type_name -> recording.RegisterRequest
+	8,  // 6: recording.SfuToRecording.start_recording:type_name -> recording.StartRecordingRequest
+	10, // 7: recording.SfuToRecording.stop_recording:type_name -> recording.StopRecordingRequest
+	12, // 8: recording.SfuToRecording.subscribe_track:type_name -> recording.SubscribeTrackRequest
+	13, // 9: recording.SfuToRecording.unsubscribe_track:type_name -> recording.UnsubscribeTrackRequest
+	14, // 10: recording.SfuToRecording.rtp_packet:type_name -> recording.RtpPacket
+	15, // 11: recording.SfuToRecording.room_event:type_name -> recording.RoomEvent
+	24, // 12: recording.SfuToRecording.heartbeat:type_name -> recording.Heartbeat
+	23, // 13: recording.StartRecordingRequest.policy:type_name -> recording.RecordingPolicy
+	26, // 14: recording.StopRecordingResponse.stats:type_name -> recording.RecordingStats
 	2,  // 15: recording.SubscribeTrackRequest.track_type:type_name -> recording.TrackType
 	2,  // 16: recording.UnsubscribeTrackRequest.track_type:type_name -> recording.TrackType
-	15, // 17: recording.RoomEvent.producer_created:type_name -> recording.ProducerCreatedEvent
-	16, // 18: recording.RoomEvent.producer_closed:type_name -> recording.ProducerClosedEvent
-	17, // 19: recording.RoomEvent.producer_paused:type_name -> recording.ProducerPausedEvent
-	18, // 20: recording.RoomEvent.producer_resumed:type_name -> recording.ProducerResumedEvent
-	19, // 21: recording.RoomEvent.peer_joined:type_name -> recording.PeerJoinedEvent
-	20, // 22: recording.RoomEvent.peer_left:type_name -> recording.PeerLeftEvent
-	21, // 23: recording.RoomEvent.active_speaker:type_name -> recording.ActiveSpeakerEvent
+	16, // 17: recording.RoomEvent.producer_created:type_name -> recording.ProducerCreatedEvent
+	17, // 18: recording.RoomEvent.producer_closed:type_name -> recording.ProducerClosedEvent
+	18, // 19: recording.RoomEvent.producer_paused:type_name -> recording.ProducerPausedEvent
+	19, // 20: recording.RoomEvent.producer_resumed:type_name -> recording.ProducerResumedEvent
+	20, // 21: recording.RoomEvent.peer_joined:type_name -> recording.PeerJoinedEvent
+	21, // 22: recording.RoomEvent.peer_left:type_name -> recording.PeerLeftEvent
+	22, // 23: recording.RoomEvent.active_speaker:type_name -> recording.ActiveSpeakerEvent
 	2,  // 24: recording.ProducerCreatedEvent.track_type:type_name -> recording.TrackType
 	2,  // 25: recording.ProducerClosedEvent.track_type:type_name -> recording.TrackType
 	2,  // 26: recording.ProducerPausedEvent.track_type:type_name -> recording.TrackType
 	2,  // 27: recording.ProducerResumedEvent.track_type:type_name -> recording.TrackType
 	0,  // 28: recording.RecordingPolicy.who_can_record:type_name -> recording.WhoCanRecord
 	1,  // 29: recording.RecordingPolicy.who_can_access_recordings:type_name -> recording.AccessLevel
-	4,  // 30: recording.RecordingSfuBridge.Connect:input_type -> recording.SfuToRecording
-	3,  // 31: recording.RecordingSfuBridge.Connect:output_type -> recording.RecordingToSfu
-	31, // [31:32] is the sub-list for method output_type
-	30, // [30:31] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	3,  // 30: recording.RecordingPolicy.quick_access_layout:type_name -> recording.RecordingLayout
+	5,  // 31: recording.RecordingSfuBridge.Connect:input_type -> recording.SfuToRecording
+	4,  // 32: recording.RecordingSfuBridge.Connect:output_type -> recording.RecordingToSfu
+	32, // [32:33] is the sub-list for method output_type
+	31, // [31:32] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_recording_sfu_proto_init() }
@@ -2352,7 +2449,7 @@ func file_recording_sfu_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_recording_sfu_proto_rawDesc), len(file_recording_sfu_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,

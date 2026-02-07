@@ -13,23 +13,23 @@ import (
 
 // RoomRecording manages recording state for a single room
 type RoomRecording struct {
-	mu            sync.RWMutex
-	roomID        string
-	recordingID   string
-	policy        *Policy
-	startTime     time.Time
-	requestedBy   string
-	status        RecordingStatus
-	tracks        map[string]*TrackWriter // keyed by producerID
+	mu              sync.RWMutex
+	roomID          string
+	recordingID     string
+	policy          *Policy
+	startTime       time.Time
+	requestedBy     string
+	status          RecordingStatus
+	tracks          map[string]*TrackWriter // keyed by producerID
 	completedTracks []TrackInfo
-	participants  map[string]*Participant
-	timeline      *Timeline
-	storage       storage.Storage
-	storageCtx    context.Context
-	storageCancel context.CancelFunc
-	logger        *zap.Logger
-	bufferSize    int
-	flushInterval time.Duration
+	participants    map[string]*Participant
+	timeline        *Timeline
+	storage         storage.Storage
+	storageCtx      context.Context
+	storageCancel   context.CancelFunc
+	logger          *zap.Logger
+	bufferSize      int
+	flushInterval   time.Duration
 	segmentDuration time.Duration
 	segmentMaxBytes int64
 }
@@ -84,13 +84,13 @@ type TimelineEvent struct {
 
 // RoomRecordingConfig holds configuration for room recording
 type RoomRecordingConfig struct {
-	RoomID        string
-	Policy        *Policy
-	RequestedBy   string
-	Storage       storage.Storage
-	Logger        *zap.Logger
-	BufferSize    int
-	FlushInterval time.Duration
+	RoomID          string
+	Policy          *Policy
+	RequestedBy     string
+	Storage         storage.Storage
+	Logger          *zap.Logger
+	BufferSize      int
+	FlushInterval   time.Duration
 	SegmentDuration time.Duration
 	SegmentMaxBytes int64
 }
@@ -111,22 +111,22 @@ func NewRoomRecording(cfg RoomRecordingConfig) (*RoomRecording, error) {
 	}
 
 	r := &RoomRecording{
-		roomID:        cfg.RoomID,
-		recordingID:   recordingID,
-		policy:        cfg.Policy,
-		startTime:     time.Now(),
-		requestedBy:   cfg.RequestedBy,
-		status:        StatusRecording,
-		tracks:        make(map[string]*TrackWriter),
+		roomID:          cfg.RoomID,
+		recordingID:     recordingID,
+		policy:          cfg.Policy,
+		startTime:       time.Now(),
+		requestedBy:     cfg.RequestedBy,
+		status:          StatusRecording,
+		tracks:          make(map[string]*TrackWriter),
 		completedTracks: make([]TrackInfo, 0),
-		participants:  make(map[string]*Participant),
-		timeline:      &Timeline{Events: []TimelineEvent{}},
-		storage:       cfg.Storage,
-		storageCtx:    ctx,
-		storageCancel: cancel,
-		logger:        cfg.Logger,
-		bufferSize:    cfg.BufferSize,
-		flushInterval: cfg.FlushInterval,
+		participants:    make(map[string]*Participant),
+		timeline:        &Timeline{Events: []TimelineEvent{}},
+		storage:         cfg.Storage,
+		storageCtx:      ctx,
+		storageCancel:   cancel,
+		logger:          cfg.Logger,
+		bufferSize:      cfg.BufferSize,
+		flushInterval:   cfg.FlushInterval,
 		segmentDuration: cfg.SegmentDuration,
 		segmentMaxBytes: cfg.SegmentMaxBytes,
 	}
@@ -165,6 +165,16 @@ func (r *RoomRecording) Status() RecordingStatus {
 	return r.status
 }
 
+// PolicySnapshot returns a copy of the current recording policy.
+func (r *RoomRecording) PolicySnapshot() Policy {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.policy == nil {
+		return *DefaultPolicy()
+	}
+	return *r.policy
+}
+
 // HasTrack checks if a producer track exists in this recording.
 func (r *RoomRecording) HasTrack(producerID string) bool {
 	r.mu.RLock()
@@ -177,6 +187,29 @@ func (r *RoomRecording) HasTrack(producerID string) bool {
 // StartTime returns when recording started
 func (r *RoomRecording) StartTime() time.Time {
 	return r.startTime
+}
+
+// Snapshot writes a metadata + timeline snapshot for the recording.
+func (r *RoomRecording) Snapshot(status string, endTime time.Time) error {
+	if status == "" {
+		status = "recording"
+	}
+	var endPtr *time.Time
+	if !endTime.IsZero() {
+		endPtr = &endTime
+	}
+
+	metadata := r.buildMetadataSnapshot(status, endPtr, "")
+	if err := r.storage.WriteMetadata(r.storageCtx, r.roomID, r.recordingID, metadata); err != nil {
+		return err
+	}
+
+	timeline := r.buildTimelineSnapshot()
+	if err := r.storage.WriteTimeline(r.storageCtx, r.roomID, r.recordingID, timeline); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AddTrack adds a new track to the recording
@@ -218,21 +251,21 @@ func (r *RoomRecording) AddTrack(producerID, peerID, codec string, ssrc uint32, 
 
 	// Create a buffer for the track
 	trackWriter, err := NewTrackWriter(TrackWriterConfig{
-		TrackID:       trackID,
-		ProducerID:    producerID,
-		PeerID:        peerID,
-		TrackType:     trackType,
-		Codec:         codec,
-		SSRC:          ssrc,
-		PayloadType:   payloadType,
-		BufferSize:    r.bufferSize,
-		FlushInterval: r.flushInterval,
-		Storage:       r.storage,
-		RoomID:        r.roomID,
-		RecordingID:   r.recordingID,
+		TrackID:         trackID,
+		ProducerID:      producerID,
+		PeerID:          peerID,
+		TrackType:       trackType,
+		Codec:           codec,
+		SSRC:            ssrc,
+		PayloadType:     payloadType,
+		BufferSize:      r.bufferSize,
+		FlushInterval:   r.flushInterval,
+		Storage:         r.storage,
+		RoomID:          r.roomID,
+		RecordingID:     r.recordingID,
 		SegmentDuration: r.segmentDuration,
 		SegmentMaxBytes: r.segmentMaxBytes,
-		Logger:        r.logger,
+		Logger:          r.logger,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create track writer: %w", err)
@@ -318,6 +351,25 @@ func (r *RoomRecording) WritePacket(producerID string, data []byte, serverTimest
 	}
 
 	return track.WritePacket(data, serverTimestamp)
+}
+
+// RotateSegmentsAt closes active segments at a specific time and starts new segments.
+func (r *RoomRecording) RotateSegmentsAt(cutoff time.Time) {
+	r.mu.RLock()
+	tracks := make([]*TrackWriter, 0, len(r.tracks))
+	for _, track := range r.tracks {
+		tracks = append(tracks, track)
+	}
+	r.mu.RUnlock()
+
+	for _, track := range tracks {
+		if err := track.RotateAt(cutoff); err != nil {
+			r.logger.Warn("Failed to rotate track segment",
+				zap.String("room_id", r.roomID),
+				zap.String("track_id", track.trackID),
+				zap.Error(err))
+		}
+	}
 }
 
 // AddParticipant adds a participant to the recording
@@ -510,17 +562,22 @@ func (r *RoomRecording) normalizeEventTime(eventTime time.Time) time.Time {
 
 func (r *RoomRecording) writePolicySnapshot() error {
 	snapshot := &storage.PolicySnapshot{
-		RecordingID:            r.recordingID,
-		RoomID:                 r.roomID,
-		Enabled:                r.policy.Enabled,
-		WhoCanRecord:           r.policy.WhoCanRecord.String(),
-		AutoRecord:             r.policy.AutoRecord,
-		RecordAudio:            r.policy.RecordAudio,
-		RecordVideo:            r.policy.RecordVideo,
-		RecordScreenshare:      r.policy.RecordScreenshare,
-		WhoCanAccessRecordings: r.policy.WhoCanAccessRecordings.String(),
-		AllowedAccessorIds:     r.policy.AllowedAccessorIds,
-		SnapshotTime:           r.startTime,
+		RecordingID:                  r.recordingID,
+		RoomID:                       r.roomID,
+		Enabled:                      r.policy.Enabled,
+		WhoCanRecord:                 r.policy.WhoCanRecord.String(),
+		AutoRecord:                   r.policy.AutoRecord,
+		AutoRecordQuickAccess:        r.policy.AutoRecordQuickAccess,
+		AutoRecordLateComposite:      r.policy.AutoRecordLateComposite,
+		RecordAudio:                  r.policy.RecordAudio,
+		RecordVideo:                  r.policy.RecordVideo,
+		RecordScreenshare:            r.policy.RecordScreenshare,
+		WhoCanAccessRecordings:       r.policy.WhoCanAccessRecordings.String(),
+		AllowedAccessorIds:           r.policy.AllowedAccessorIds,
+		QuickAccessLayout:            r.policy.QuickAccessLayout.String(),
+		QuickAccessPartDurationSec:   r.policy.QuickAccessPartDurationSec,
+		LateCompositePartDurationSec: r.policy.LateCompositePartDurationSec,
+		SnapshotTime:                 r.startTime,
 	}
 
 	return r.storage.WritePolicy(r.storageCtx, r.roomID, r.recordingID, snapshot)
@@ -528,7 +585,17 @@ func (r *RoomRecording) writePolicySnapshot() error {
 
 func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 	now := time.Now()
+	metadata := r.buildMetadataSnapshot("completed", &now, stoppedBy)
+	return r.storage.WriteMetadata(r.storageCtx, r.roomID, r.recordingID, metadata)
+}
 
+func (r *RoomRecording) writeTimeline() error {
+	timeline := r.buildTimelineSnapshot()
+	return r.storage.WriteTimeline(r.storageCtx, r.roomID, r.recordingID, timeline)
+}
+
+func (r *RoomRecording) buildMetadataSnapshot(status string, endTime *time.Time, stoppedBy string) *storage.RecordingMetadata {
+	r.mu.RLock()
 	participants := make([]storage.ParticipantInfo, 0, len(r.participants))
 	for _, p := range r.participants {
 		participants = append(participants, storage.ParticipantInfo{
@@ -538,6 +605,20 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 			LeftAt:      p.LeftAt,
 		})
 	}
+
+	activeTracks := make([]*TrackWriter, 0, len(r.tracks))
+	for _, t := range r.tracks {
+		activeTracks = append(activeTracks, t)
+	}
+	completedTracks := make([]TrackInfo, 0, len(r.completedTracks))
+	for _, info := range r.completedTracks {
+		completedTracks = append(completedTracks, info)
+	}
+	startTime := r.startTime
+	recordingID := r.recordingID
+	roomID := r.roomID
+	requestedBy := r.requestedBy
+	r.mu.RUnlock()
 
 	tracks := make([]storage.TrackInfo, 0)
 	appendTrack := func(info TrackInfo) {
@@ -572,23 +653,24 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 		})
 	}
 
-	for _, t := range r.tracks {
+	for _, t := range activeTracks {
 		appendTrack(t.TrackInfo())
 	}
-	for _, info := range r.completedTracks {
+	for _, info := range completedTracks {
 		appendTrack(info)
 	}
 
 	stats := r.Stats()
-	metadata := &storage.RecordingMetadata{
-		RecordingID:  r.recordingID,
-		RoomID:       r.roomID,
-		StartTime:    r.startTime,
-		EndTime:      &now,
-		Status:       "completed",
+
+	return &storage.RecordingMetadata{
+		RecordingID:  recordingID,
+		RoomID:       roomID,
+		StartTime:    startTime,
+		EndTime:      endTime,
+		Status:       status,
 		Participants: participants,
 		Tracks:       tracks,
-		RequestedBy:  r.requestedBy,
+		RequestedBy:  requestedBy,
 		StoppedBy:    stoppedBy,
 		Stats: &storage.RecordingStats{
 			DurationMs: stats.Duration.Milliseconds(),
@@ -597,11 +679,10 @@ func (r *RoomRecording) writeMetadata(stoppedBy string) error {
 			PeerCount:  stats.PeerCount,
 		},
 	}
-
-	return r.storage.WriteMetadata(r.storageCtx, r.roomID, r.recordingID, metadata)
 }
 
-func (r *RoomRecording) writeTimeline() error {
+func (r *RoomRecording) buildTimelineSnapshot() *storage.Timeline {
+	r.mu.RLock()
 	events := make([]storage.TimelineEvent, len(r.timeline.Events))
 	for i, e := range r.timeline.Events {
 		events[i] = storage.TimelineEvent{
@@ -610,12 +691,13 @@ func (r *RoomRecording) writeTimeline() error {
 			Data:      e.Data,
 		}
 	}
+	recordingID := r.recordingID
+	roomID := r.roomID
+	r.mu.RUnlock()
 
-	timeline := &storage.Timeline{
-		RecordingID: r.recordingID,
-		RoomID:      r.roomID,
+	return &storage.Timeline{
+		RecordingID: recordingID,
+		RoomID:      roomID,
 		Events:      events,
 	}
-
-	return r.storage.WriteTimeline(r.storageCtx, r.roomID, r.recordingID, timeline)
 }

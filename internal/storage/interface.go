@@ -38,16 +38,16 @@ type Storage interface {
 
 // RecordingMetadata contains information about a recording session
 type RecordingMetadata struct {
-	RecordingID string                 `json:"recording_id"`
-	RoomID      string                 `json:"room_id"`
-	StartTime   time.Time              `json:"start_time"`
-	EndTime     *time.Time             `json:"end_time,omitempty"`
-	Status      string                 `json:"status"` // "recording", "completed", "failed"
-	Participants []ParticipantInfo     `json:"participants"`
-	Tracks      []TrackInfo            `json:"tracks"`
-	Stats       *RecordingStats        `json:"stats,omitempty"`
-	RequestedBy string                 `json:"requested_by"`
-	StoppedBy   string                 `json:"stopped_by,omitempty"`
+	RecordingID  string            `json:"recording_id"`
+	RoomID       string            `json:"room_id"`
+	StartTime    time.Time         `json:"start_time"`
+	EndTime      *time.Time        `json:"end_time,omitempty"`
+	Status       string            `json:"status"` // "recording", "completed", "failed"
+	Participants []ParticipantInfo `json:"participants"`
+	Tracks       []TrackInfo       `json:"tracks"`
+	Stats        *RecordingStats   `json:"stats,omitempty"`
+	RequestedBy  string            `json:"requested_by"`
+	StoppedBy    string            `json:"stopped_by,omitempty"`
 }
 
 // ParticipantInfo contains information about a participant
@@ -60,16 +60,16 @@ type ParticipantInfo struct {
 
 // TrackInfo contains information about a recorded track
 type TrackInfo struct {
-	TrackID     string     `json:"track_id"`
-	ProducerID  string     `json:"producer_id"`
-	PeerID      string     `json:"peer_id"`
-	Type        string     `json:"type"` // "audio", "video", "screenshare"
-	Codec       string     `json:"codec"`
-	SSRC        uint32     `json:"ssrc"`
-	PayloadType uint8      `json:"payload_type"`
-	StartTime   time.Time  `json:"start_time"`
-	EndTime     *time.Time `json:"end_time,omitempty"`
-	FileName    string     `json:"file_name"`
+	TrackID     string             `json:"track_id"`
+	ProducerID  string             `json:"producer_id"`
+	PeerID      string             `json:"peer_id"`
+	Type        string             `json:"type"` // "audio", "video", "screenshare"
+	Codec       string             `json:"codec"`
+	SSRC        uint32             `json:"ssrc"`
+	PayloadType uint8              `json:"payload_type"`
+	StartTime   time.Time          `json:"start_time"`
+	EndTime     *time.Time         `json:"end_time,omitempty"`
+	FileName    string             `json:"file_name"`
 	Segments    []TrackSegmentInfo `json:"segments,omitempty"`
 }
 
@@ -106,15 +106,20 @@ type TimelineEvent struct {
 
 // PolicySnapshot contains the recording policy at start time
 type PolicySnapshot struct {
-	RecordingID            string    `json:"recording_id"`
-	RoomID                 string    `json:"room_id"`
-	Enabled                bool      `json:"enabled"`
-	WhoCanRecord           string    `json:"who_can_record"`
-	AutoRecord             bool      `json:"auto_record"`
-	RecordAudio            bool      `json:"record_audio"`
-	RecordVideo            bool      `json:"record_video"`
-	RecordScreenshare      bool      `json:"record_screenshare"`
-	WhoCanAccessRecordings string    `json:"who_can_access_recordings"`
-	AllowedAccessorIds     []string  `json:"allowed_accessor_ids,omitempty"`
-	SnapshotTime           time.Time `json:"snapshot_time"`
+	RecordingID                  string    `json:"recording_id"`
+	RoomID                       string    `json:"room_id"`
+	Enabled                      bool      `json:"enabled"`
+	WhoCanRecord                 string    `json:"who_can_record"`
+	AutoRecord                   bool      `json:"auto_record"`
+	AutoRecordQuickAccess        bool      `json:"auto_record_quick_access"`
+	AutoRecordLateComposite      bool      `json:"auto_record_late_composite"`
+	RecordAudio                  bool      `json:"record_audio"`
+	RecordVideo                  bool      `json:"record_video"`
+	RecordScreenshare            bool      `json:"record_screenshare"`
+	WhoCanAccessRecordings       string    `json:"who_can_access_recordings"`
+	AllowedAccessorIds           []string  `json:"allowed_accessor_ids,omitempty"`
+	QuickAccessLayout            string    `json:"quick_access_layout"`
+	QuickAccessPartDurationSec   int32     `json:"quick_access_part_duration_sec"`
+	LateCompositePartDurationSec int32     `json:"late_composite_part_duration_sec"`
+	SnapshotTime                 time.Time `json:"snapshot_time"`
 }

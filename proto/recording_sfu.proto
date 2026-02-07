@@ -222,6 +222,11 @@ message RecordingPolicy {
   bool record_screenshare = 6;
   AccessLevel who_can_access_recordings = 7; // Post-meeting access control
   repeated string allowed_accessor_ids = 8;  // User IDs when ACCESS_SELECTED
+  bool auto_record_quick_access = 9;
+  bool auto_record_late_composite = 10;
+  int32 quick_access_part_duration_sec = 11;
+  int32 late_composite_part_duration_sec = 12;
+  RecordingLayout quick_access_layout = 13;
 }
 
 enum WhoCanRecord {
@@ -244,6 +249,11 @@ enum TrackType {
   AUDIO = 1;
   VIDEO = 2;
   SCREENSHARE = 3;
+}
+
+enum RecordingLayout {
+  RECORDING_LAYOUT_UNSPECIFIED = 0;
+  RECORDING_LAYOUT_GRID = 1;
 }
 
 // =============================================================================

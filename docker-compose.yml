@@ -20,6 +20,11 @@ services:
       - RECORDING_S3_SECRET_KEY=minioadmin123
       - RECORDING_S3_USE_SSL=false
       - RECORDING_S3_REGION=us-east-1
+      - RECORDING_COMPOSITER_HOST=compositer
+      - RECORDING_COMPOSITER_PORT=50085
+      - RECORDING_COMPOSITER_TIMEOUT=30s
+      - RECORDING_COMPOSITER_ENABLED=true
+      - RECORDING_COMPOSITER_SERVICE_KEY=recording-service
       - RECORDING_LOG_LEVEL=info
     networks:
       - brollyhub-central_brollyhub_network

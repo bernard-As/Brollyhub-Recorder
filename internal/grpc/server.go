@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/brollyhub/recording/internal/compositer"
 	"github.com/brollyhub/recording/internal/config"
 	"github.com/brollyhub/recording/internal/recording"
 	"github.com/brollyhub/recording/internal/shelves"
@@ -22,16 +23,19 @@ import (
 type Server struct {
 	pb.UnimplementedRecordingSfuBridgeServer
 
-	mu              sync.RWMutex
-	config          *config.GRPCConfig
-	grpcServer      *grpc.Server
-	manager         *recording.Manager
-	logger          *zap.Logger
-	serviceID       string
-	connectedSFU    *SFUConnection
-	shelvesClient   *shelves.Client
-	heartbeatTicker *time.Ticker
-	done            chan struct{}
+	mu               sync.RWMutex
+	config           *config.GRPCConfig
+	grpcServer       *grpc.Server
+	manager          *recording.Manager
+	logger           *zap.Logger
+	serviceID        string
+	connectedSFU     *SFUConnection
+	shelvesClient    *shelves.Client
+	compositerClient *compositer.Client
+	heartbeatTicker  *time.Ticker
+	liveMu           sync.Mutex
+	liveSessions     map[string]*liveSession
+	done             chan struct{}
 }
 
 // SFUConnection represents a connected SFU instance
@@ -44,21 +48,24 @@ type SFUConnection struct {
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
-	Config        *config.GRPCConfig
-	Manager       *recording.Manager
-	Logger        *zap.Logger
-	ShelvesClient *shelves.Client
+	Config           *config.GRPCConfig
+	Manager          *recording.Manager
+	Logger           *zap.Logger
+	ShelvesClient    *shelves.Client
+	CompositerClient *compositer.Client
 }
 
 // NewServer creates a new gRPC server
 func NewServer(cfg ServerConfig) *Server {
 	return &Server{
-		config:        cfg.Config,
-		manager:       cfg.Manager,
-		logger:        cfg.Logger,
-		serviceID:     uuid.New().String(),
-		shelvesClient: cfg.ShelvesClient,
-		done:          make(chan struct{}),
+		config:           cfg.Config,
+		manager:          cfg.Manager,
+		logger:           cfg.Logger,
+		serviceID:        uuid.New().String(),
+		shelvesClient:    cfg.ShelvesClient,
+		compositerClient: cfg.CompositerClient,
+		liveSessions:     make(map[string]*liveSession),
+		done:             make(chan struct{}),
 	}
 }
 
@@ -216,6 +223,7 @@ func (s *Server) handleDisconnect() {
 				startTime = rec.StartTime()
 				recordingID = rec.RecordingID()
 			}
+			s.stopLiveRecorder(roomID)
 			if err := s.manager.StopRecording(roomID, "sfu_disconnected"); err != nil {
 				s.logger.Warn("Failed to stop recording on disconnect",
 					zap.String("room_id", roomID),
@@ -223,7 +231,7 @@ func (s *Server) handleDisconnect() {
 				continue
 			}
 			if recordingID != "" {
-				s.notifyRoomRecording(roomID, recordingID, pb.RecordingStatus_RECORDING_STATUS_FAILED, startTime, time.Now())
+				s.notifyRoomRecording(roomID, recordingID, pb.RecordingStatus_RECORDING_STATUS_FAILED, startTime, time.Now(), nil, nil)
 			}
 		}
 	}

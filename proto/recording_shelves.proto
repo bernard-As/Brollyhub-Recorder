@@ -25,6 +25,17 @@ message UpsertRoomRecordingRequest {
   string metadata_key = 7;
   string timeline_key = 8;
   string service_id = 9;
+  repeated RecordingPart quick_access_parts = 10;
+  repeated RecordingPart late_composite_parts = 11;
+}
+
+message RecordingPart {
+  int32 index = 1;
+  string key = 2;
+  int64 start_offset_ms = 3;
+  int64 end_offset_ms = 4;
+  int64 duration_ms = 5;
+  string label = 6;
 }
 
 message UpsertRoomRecordingResponse {
