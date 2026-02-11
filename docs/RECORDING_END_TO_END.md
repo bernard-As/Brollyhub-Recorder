@@ -8,20 +8,25 @@ This document describes the full recording pipeline across:
 
 It is intended to show how RTP is captured, written to MinIO/S3, how metadata is upserted into Shelves, and how the UI exposes a virtual "Meeting Recording" item that opens the Recording Composer UI.
 
-This reflects the current codebase behavior as of 2026-02-01.
+This reflects the current codebase behavior as of 2026-02-07.
 
 ---
 
 ## High-Level Data Flow
 
 1) SFU (MediaSoup) sends RTP + room events to Recording Service (gRPC).
-2) Recording Service writes raw track data + metadata/timeline/policy to MinIO (S3-compatible).
-3) Recording Service notifies Shelves backend via gRPC with:
-   - room_id, recording_id
-   - status, start/stop times
+2) Recording Service writes raw track data to MinIO (S3-compatible) and snapshots metadata/timeline.
+3) If `auto_record_quick_access=true`, the live recorder:
+   - rotates segments at fixed part boundaries,
+   - snapshots metadata/timeline, and
+   - queues Compositer exports for each part.
+4) Recording Service notifies Shelves backend via gRPC with:
+   - room_id, recording_id, status, start/stop times
    - s3_prefix, metadata_key, timeline_key
-4) Shelves backend stores a RoomRecording row and injects a virtual "Recording" item into room shelf responses.
-5) Huddle frontend renders that virtual item in the room shelf and opens a Recording Composer UI in File Preview.
+   - quick_access_parts, late_composite_parts (when available)
+5) If `auto_record_late_composite=true`, final composited parts are queued at stop time.
+6) Shelves backend stores RoomRecording + parts and injects a virtual "Recording" item into room shelf responses.
+7) Huddle frontend renders that virtual item in the room shelf and opens a Recording Composer UI in File Preview.
 
 ---
 
@@ -39,7 +44,35 @@ This reflects the current codebase behavior as of 2026-02-01.
 - StartRecording (from SFU) => create RoomRecording, start storage context, open track writers.
 - Track subscribe events create track writers (per producer).
 - RTP packets are written to track writers (streamed S3 multipart upload).
+- During recording (if quick access enabled):
+  - Periodic part boundary timers rotate segments and snapshot metadata/timeline.
+  - Compositer exports are queued per part.
 - StopRecording => finalize tracks, write metadata + timeline + policy, write .completed marker.
+  - Build quick access + late composite parts lists for the full duration.
+  - Queue any remaining exports.
+
+### Compositer Integration (Quick Access + Late Composite)
+When quick-access or late-composite is enabled in policy, the Recording Service
+queues Compositer exports with an explicit output key for each part.
+
+**Policy Fields (recording):**
+- `auto_record_quick_access` (bool) → enable live part exports
+- `auto_record_late_composite` (bool) → enable post-stop part exports
+- `quick_access_part_duration_sec` (int, default 720)
+- `late_composite_part_duration_sec` (int, default 720)
+- `quick_access_layout` (string, default `grid`)
+
+**Job Types:**
+- `quick_access`: created during live recording at each part boundary
+- `late_composite`: created after recording stops for final exports
+
+**Export Requests (Compositer):**
+- `format=mp4`, `layout=grid` (or `quick_access_layout`)
+- `start_time_sec`, `end_time_sec` derived from part offsets
+- `output_key` set to the part path (ensures deterministic storage)
+
+**Auth:**
+- Recording Service uses `X-Compositer-Service-Key` and `X-Compositer-Room-Id`.
 
 ### Storage Layout (MinIO/S3)
 In `MinIOStorage.recordingPath(...)`:
@@ -53,6 +86,12 @@ rooms/{room_id}/{recording_id}/
   policy.json
   tracks/
     {peer_id}-{track_type}-{segment_index}.rtp
+  quick_access/
+    part-0001.mp4
+    part-0002.mp4
+  processed/exports/
+    part-0001.mp4
+    part-0002.mp4
 ```
 
 Generated in:
@@ -62,6 +101,7 @@ Generated in:
 - `metadata.json` contains participants, tracks, stats, and timestamps.
 - `timeline.json` contains chronological room events (peer joined/left, producer events, active speaker, etc.).
 - `policy.json` is a snapshot of the room recording policy at start time.
+- During live recording, metadata/timeline are re-snapshotted at quick-access part boundaries to enable partial exports.
 
 Written in:
 - `D:\recording\internal\recording\room.go`
@@ -88,6 +128,8 @@ Fields:
 - metadata_key
 - timeline_key
 - service_id
+- quick_access_parts (optional)
+- late_composite_parts (optional)
 
 ### Recording Service -> Shelves Call
 In `D:\recording\internal\grpc\handlers.go`:
@@ -141,7 +183,9 @@ The virtual item includes:
     status,
     started_at,
     completed_at,
-    available: status == "completed"
+    available: status == "completed",
+    quick_access_parts: [...],
+    late_composite_parts: [...]
   }
 }
 ```
@@ -180,7 +224,8 @@ sharedMediaLayoutStore.enableFilePreview({
   - Ready if `status === "completed"`
   - Failed if `status === "failed"`
 
-Currently there is no backend API call to fetch a composed preview or MP4. This is a UI placeholder for a future post-processing pipeline.
+Quick access + late composite parts are now produced by Compositer and exposed via Shelves.
+The UI can use those parts to show short previews or post-meeting exports.
 
 ---
 
@@ -223,6 +268,7 @@ Note: Shelves stores normal files in shelves-private bucket. Recording artifacts
 ### UI
 - Recording item appears only when `latest_recording` exists.
 - Recording composer shows status but does not fetch media output.
+- Quick access/late composite parts may be present even while status is `recording`.
 
 ---
 
@@ -233,12 +279,15 @@ Note: Shelves stores normal files in shelves-private bucket. Recording artifacts
    - rooms/{room_id}/{recording_id}/metadata.json
    - rooms/{room_id}/{recording_id}/timeline.json
    - rooms/{room_id}/{recording_id}/tracks/*.rtp
-3) Confirm Shelves received gRPC upsert:
+3) If quick access is enabled, confirm parts appear:
+   - rooms/{room_id}/{recording_id}/quick_access/part-0001.mp4
+4) Confirm Shelves received gRPC upsert:
    - RoomRecording row exists with s3_prefix/metadata_key/timeline_key.
-4) Fetch room shelf detail and verify:
+   - quick_access_parts / late_composite_parts arrays present when enabled
+5) Fetch room shelf detail and verify:
    - latest_recording is populated
    - virtual Recording item present in items list
-5) In Huddle UI:
+6) In Huddle UI:
    - Recording item appears in Meeting Files
    - Clicking opens Recording Composer UI
 
@@ -246,9 +295,8 @@ Note: Shelves stores normal files in shelves-private bucket. Recording artifacts
 
 ## Known Gaps (Expected Future Work)
 
-- No API to generate or stream a composed MP4 preview from raw RTP.
-- No UI wiring to request a composed preview from backend.
-- Composition/pipeline is described in architecture docs but not yet implemented.
+- No per-peer HLS preview for interactive composition (still a planned path).
+- The UI does not yet implement a full timeline-based playback view.
 
 ---
 

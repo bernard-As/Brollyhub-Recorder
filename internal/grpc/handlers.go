@@ -58,6 +58,31 @@ func (s *Server) handleStartRecording(stream pb.RecordingSfuBridge_ConnectServer
 
 	// Convert policy from proto
 	policy := recording.PolicyFromProto(req.Policy)
+	if policy == nil || !policy.Enabled {
+		return stream.Send(&pb.RecordingToSfu{
+			Message: &pb.RecordingToSfu_StartRecordingResponse{
+				StartRecordingResponse: &pb.StartRecordingResponse{
+					Success: false,
+					RoomId:  req.RoomId,
+					Message: "recording is disabled for this room",
+				},
+			},
+		})
+	}
+	if req.RequestedBy != "system" {
+		// Validate who_can_record policy enum values.
+		if err := policy.CanRecord(recording.RoleHost); err != nil {
+			return stream.Send(&pb.RecordingToSfu{
+				Message: &pb.RecordingToSfu_StartRecordingResponse{
+					StartRecordingResponse: &pb.StartRecordingResponse{
+						Success: false,
+						RoomId:  req.RoomId,
+						Message: err.Error(),
+					},
+				},
+			})
+		}
+	}
 
 	// Start recording
 	rec, err := s.manager.StartRecording(req.RoomId, req.RequestedBy, policy)
